@@ -1,0 +1,137 @@
+{
+  "_comment": "Evaluation set for Bhunaga. Every question is the SAME question in en/hi/mr, so cross-language consistency is measurable: the three should retrieve the same document and give the same figures. Every item is answerable from a real file in data/, and expected_source names it, so source_match is meaningful rather than always zero. answer_keywords list the facts a correct answer must contain, with the en/hi/mr spellings of each, because grading has to work across scripts. The last four items target the native-language documents specifically, which is where SAME_LANG_BOOST has something to do.",
+  "items": [
+    {
+      "id": "urea_wheat",
+      "topic": "fertiliser dose",
+      "questions": {
+        "en": "How much urea per acre is recommended for wheat?",
+        "hi": "गेहूं के लिए प्रति एकड़ कितनी यूरिया की सिफारिश की जाती है?",
+        "mr": "गव्हासाठी प्रति एकर किती युरिया शिफारस केली जाते?"
+      },
+      "answer_keywords": ["urea", "यूरिया", "युरिया", "50", "५०", "acre", "एकड़", "एकर"],
+      "expected_source": "wheat"
+    },
+    {
+      "id": "wheat_critical_irrigation",
+      "topic": "irrigation timing",
+      "questions": {
+        "en": "Which is the most important irrigation for wheat and when?",
+        "hi": "गेहूं के लिए सबसे ज़रूरी सिंचाई कौन सी है और कब?",
+        "mr": "गव्हासाठी सर्वात महत्त्वाची सिंचाई कोणती आणि केव्हा?"
+      },
+      "answer_keywords": ["crown root", "ताज जड़", "21", "25", "२५", "irrigation", "सिंचाई"],
+      "expected_source": "wheat"
+    },
+    {
+      "id": "onion_storage",
+      "topic": "post-harvest",
+      "questions": {
+        "en": "How should onions be stored after harvest?",
+        "hi": "कटाई के बाद प्याज़ का भंडारण कैसे करना चाहिए?",
+        "mr": "कांदा काढणीनंतर साठवणूक कशी करावी?"
+      },
+      "answer_keywords": ["dry", "सुक", "कोरड", "ventilat", "हवेशीर", "हवादार", "shade", "सावली"],
+      "expected_source": "kanda"
+    },
+    {
+      "id": "onion_stop_water",
+      "topic": "irrigation before harvest",
+      "questions": {
+        "en": "When should I stop watering onion before harvest?",
+        "hi": "प्याज़ की कटाई से कितने दिन पहले पानी बंद करना चाहिए?",
+        "mr": "कांदा काढणीपूर्वी किती दिवस पाणी बंद करावे?"
+      },
+      "answer_keywords": ["15", "१५", "20", "२०", "days", "दिवस", "दिन"],
+      "expected_source": "kanda"
+    },
+    {
+      "id": "tomato_late_blight",
+      "topic": "disease",
+      "questions": {
+        "en": "What is late blight in tomato and when does it spread?",
+        "hi": "टमाटर में पछेती झुलसा क्या है और यह कब फैलता है?",
+        "mr": "टोमॅटोवरील उशिरा येणारा करपा म्हणजे काय आणि तो केव्हा पसरतो?"
+      },
+      "answer_keywords": ["late blight", "humid", "आर्द्र", "दमट", "20", "२०"],
+      "expected_source": "tomato"
+    },
+    {
+      "id": "drip_subsidy",
+      "topic": "scheme",
+      "questions": {
+        "en": "How much subsidy is available for drip irrigation?",
+        "hi": "ड्रिप सिंचाई पर कितनी सब्सिडी मिलती है?",
+        "mr": "ठिबक सिंचनासाठी किती अनुदान मिळते?"
+      },
+      "answer_keywords": ["55", "५५", "45", "४५", "subsidy", "सब्सिडी", "अनुदान"],
+      "expected_source": "drip"
+    },
+    {
+      "id": "pmkisan_amount",
+      "topic": "scheme",
+      "questions": {
+        "en": "How much money does PM-Kisan give and in how many instalments?",
+        "hi": "पीएम-किसान में कितने पैसे मिलते हैं और कितनी किश्तों में?",
+        "mr": "पीएम-किसानमध्ये किती पैसे मिळतात आणि किती हप्त्यांत?"
+      },
+      "answer_keywords": ["6000", "6,000", "६०००", "2000", "२०००", "three", "तीन"],
+      "expected_source": "kisan"
+    },
+    {
+      "id": "pmfby_report_window",
+      "topic": "insurance claim",
+      "questions": {
+        "en": "Within how many hours must crop damage be reported for insurance?",
+        "hi": "फसल बीमा के लिए नुकसान की सूचना कितने घंटों में देनी होती है?",
+        "mr": "पीक विम्यासाठी नुकसानीची माहिती किती तासांत द्यावी लागते?"
+      },
+      "answer_keywords": ["72", "७२", "hours", "घंटे", "तास"],
+      "expected_source": "yojana"
+    },
+    {
+      "id": "soil_organic_carbon",
+      "topic": "soil health",
+      "questions": {
+        "en": "What organic carbon level counts as low and how do I raise it?",
+        "hi": "मिट्टी में सेंद्रिय कार्बन कितना होने पर कम माना जाता है और कैसे बढ़ाएँ?",
+        "mr": "मातीतील सेंद्रिय कर्ब किती असल्यास कमी मानला जातो आणि कसा वाढवावा?"
+      },
+      "answer_keywords": ["0.5", "०.५", "organic carbon", "सेंद्रिय", "compost", "खत"],
+      "expected_source": "soil"
+    },
+    {
+      "id": "vermicompost_worm",
+      "topic": "vermicompost",
+      "questions": {
+        "en": "Which earthworm species should be used for vermicompost?",
+        "hi": "वर्मीकम्पोस्ट के लिए कौन सी केंचुआ प्रजाति इस्तेमाल करनी चाहिए?",
+        "mr": "गांडूळखतासाठी कोणती गांडूळ जात वापरावी?"
+      },
+      "answer_keywords": ["eisenia", "आयसेनिया", "fetida", "फेटिडा"],
+      "expected_source": "gandulkhat"
+    },
+    {
+      "id": "vermicompost_moisture",
+      "topic": "vermicompost",
+      "questions": {
+        "en": "How wet should a vermicompost bed be kept?",
+        "hi": "वर्मीकम्पोस्ट बेड में कितनी नमी रखनी चाहिए?",
+        "mr": "गांडूळखताच्या बेडमध्ये किती ओलावा ठेवावा?"
+      },
+      "answer_keywords": ["60", "६०", "70", "७०", "sponge", "स्पंज"],
+      "expected_source": "gandulkhat"
+    },
+    {
+      "id": "spray_wind",
+      "topic": "pest management",
+      "questions": {
+        "en": "In what wind speed is it unsafe to spray pesticide?",
+        "hi": "कितनी तेज़ हवा में कीटनाशक का छिड़काव नहीं करना चाहिए?",
+        "mr": "किती वेगाच्या वाऱ्यात कीटकनाशक फवारणी करू नये?"
+      },
+      "answer_keywords": ["15", "१५", "wind", "हवा", "वारा", "drift"],
+      "expected_source": "pest"
+    }
+  ]
+}

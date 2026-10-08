@@ -1,0 +1,3 @@
+# Drop your source documents here (PDF / DOCX / TXT / MD).
+# Mixed languages are fine — each chunk is tagged with its detected source
+# language at ingestion time, and BGE-M3 retrieves across languages anyway.

@@ -1,0 +1,37 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# The farmer's own details. Name, village, land size — this is personal data and
+# must never be committed. The old entry said "profile.json"; the file is
+# actually called farmer_profile.json, so it was being committed.
+farmer_profile.json
+profile.json
+
+# Caches that rebuild themselves. Committing them means shipping stale prices
+# and somebody else's village.
+market_cache.json
+places_cache.json
+
+# The local fallback index: a numpy blob plus its metadata. Rebuildable from
+# data/ in one click, so there is no reason to put it in git.
+models/local_kb/
+models/*.bin
+qdrant_storage/
+
+# Source documents: the curated .md knowledge base is tracked, anything else a
+# user drops in is not.
+data/*
+!data/.gitkeep
+!data/*.md
+
+# Personal files that drifted into the project root. Not part of the project
+# and not something to publish with it.
+Expense sheet personal .xlsx
+*.xlsx
+
+# Evaluation output IS tracked on purpose -- eval/results.{jsonl,csv} is the
+# headline result the README promises, so it must not be ignored here.

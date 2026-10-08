@@ -1,0 +1,32 @@
+# --- Core RAG stack (free / local) ---
+qdrant-client>=1.9.0          # vector store, native dense + sparse
+FlagEmbedding>=1.2.10         # BGE-M3 multilingual dense+sparse embeddings
+lingua-language-detector>=2.0 # en/hi/mr language ID (pure-Python, no compiler)
+groq>=0.11.0                  # Llama 3.3 70B generation (free tier API)
+
+# --- Document ingestion ---
+pypdf>=4.2.0                  # PDF text extraction
+python-docx>=1.1.0            # .docx extraction
+
+# --- Optional: translate-after-generation path (Marathi quality fallback) ---
+# IndicTrans2 is installed separately; see README. Uncomment if used.
+# transformers>=4.40.0
+# torch>=2.2.0
+# sentencepiece>=0.2.0
+
+# --- Utilities ---
+numpy>=1.24                   # the local fallback vector store
+python-dotenv>=1.0.1
+tqdm>=4.66.0
+pydantic>=2.7.0
+
+# --- Optional: WhatsApp / IVR channels (channels/webhook.py) ---
+# Only needed if you run the phone channels; the web app does not use them.
+# fastapi>=0.110.0
+# uvicorn>=0.29.0
+
+# --- Web UI ---
+# 1.40 is the floor, not 1.36: st.audio_input (the microphone) was added in
+# 1.40, and on an older version the voice button silently does not exist.
+streamlit>=1.40.0
+requests>=2.31.0

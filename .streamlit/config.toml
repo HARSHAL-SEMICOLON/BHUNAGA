@@ -1,0 +1,16 @@
+[server]
+# Stop Streamlit from walking every imported module (it trips over optional
+# transformers submodules that need torchvision). This removes the console
+# spam and speeds up startup. Trade-off: no auto-reload on file save — just
+# restart the app after editing code.
+fileWatcherType = "none"
+
+[theme]
+base = "light"
+primaryColor = "#1b7a3d"
+backgroundColor = "#fbfdf8"
+secondaryBackgroundColor = "#eef5e8"
+textColor = "#173a23"
+
+[browser]
+gatherUsageStats = false
