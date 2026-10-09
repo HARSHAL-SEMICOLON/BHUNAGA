@@ -16,9 +16,12 @@ profile.json
 market_cache.json
 places_cache.json
 
-# The local fallback index: a numpy blob plus its metadata. Rebuildable from
-# data/ in one click, so there is no reason to put it in git.
-models/local_kb/
+# The local fallback index: a numpy blob plus its metadata. Normally a build
+# artifact and normally not committed -- but a deployed Space has no build step
+# and its disk is wiped on every sleep, so an uncommitted index means the app
+# wakes up empty and answers nothing. It is a couple of MB. Ship it.
+# Rebuild with: python ingest.py --recreate
+!models/local_kb/
 models/*.bin
 qdrant_storage/
 

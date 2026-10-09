@@ -19,7 +19,7 @@ calculator.
 This file is the README for the Hugging Face Space. The app code is `app.py`.
 Set the secret keys in **Space settings → Variables and secrets**:
 
-- `GROQ_API_KEY`
-- `QDRANT_URL`
-- `QDRANT_API_KEY`
-- `DATA_GOV_API_KEY` (optional)
+- `GROQ_API_KEY` (required)
+- `VECTOR_BACKEND=local` (recommended — the index ships with the repo)
+- `GROQ_MODEL` (optional — defaults to `openai/gpt-oss-120b`)
+- `DATA_GOV_API_KEY` (optional — live mandi prices)
