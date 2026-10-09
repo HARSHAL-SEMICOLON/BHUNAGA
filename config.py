@@ -67,7 +67,10 @@ CHUNK_OVERLAP = 120
 TOP_K = 8                                 # how many text pieces we give the AI
 PREFETCH_K = 30                           # how many we pull from each search before mixing
 # Give a small bonus to text in the same language as the question.
-SAME_LANG_BOOST = 0.10                    # set to 0 to turn this off
+# Relative bump for evidence in the query's language: 0.10 means +10%, not
+# +0.10. Applied as a ratio in searcher.py because RRF scores are ~0.01-0.03
+# and a flat addition at this size is a filter, not a tie-breaker.
+SAME_LANG_BOOST = float(os.getenv("SAME_LANG_BOOST", "0.10"))   # 0 disables it
 
 # the AI that writes the answer (Groq, GPT-OSS 120B)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")

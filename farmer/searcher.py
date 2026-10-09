@@ -64,7 +64,17 @@ def retrieve(query: str, query_lang: str, top_k: int | None = None
         payload = pt.payload or {}
         score = float(pt.score)
         if config.SAME_LANG_BOOST and payload.get("source_lang") == query_lang:
-            score += config.SAME_LANG_BOOST
+            # Multiplicative, not additive, and the difference is not cosmetic.
+            # Qdrant returns RRF scores, which land around 0.01-0.03 -- adding a
+            # flat 0.10 was several times the entire spread, so every
+            # same-language chunk outranked every cross-language one regardless
+            # of relevance. That is a hard language filter wearing the costume
+            # of a nudge, and it switched off the cross-lingual retrieval this
+            # project exists to demonstrate. Measured on the 12-question set it
+            # pinned same_lang_ratio at 1.00 for mr and dragged keyword recall
+            # down to 0.33 against English's 0.46. As a ratio the boost scales
+            # with whatever the fusion produces and stays a tie-breaker.
+            score *= 1.0 + config.SAME_LANG_BOOST
         chunks.append(RetrievedChunk(
             text=payload.get("text", ""),
             source=payload.get("source", "?"),
