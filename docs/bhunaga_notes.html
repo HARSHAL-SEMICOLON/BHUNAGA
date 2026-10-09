@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bhunaga — Full Notes</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm 16mm 14mm; }
+
+  :root{
+    --ink:#1d2430;
+    --ink-soft:#4a5565;
+    --rule:#d8dee8;
+    --paper:#fffdf8;
+    --accent:#1f6f4a;        /* earth green */
+    --accent-soft:#e7f2ec;
+    --warn:#9a4a12;
+    --warn-soft:#fdf0e4;
+    --flag:#8a1c3b;
+    --flag-soft:#fbe9ee;
+    --mark:#fff3a8;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html{ font-size:10.3pt; }
+  body{
+    font-family:"Inter","FreeSans",sans-serif;
+    color:var(--ink);
+    background:var(--paper);
+    margin:0;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .dev{ font-family:"FreeSans","FreeSerif",sans-serif; }
+
+  /* ---------- cover ---------- */
+  .cover{
+    height:265mm; display:flex; flex-direction:column; justify-content:center;
+    page-break-after:always; text-align:left; padding-left:6mm;
+    border-left:3px solid var(--accent);
+  }
+  .cover .worm{ font-size:40pt; line-height:1; margin-bottom:6mm; }
+  .cover h1{ font-size:34pt; margin:0 0 2mm; letter-spacing:-.02em; font-weight:800; }
+  .cover .sub{ font-size:14pt; color:var(--ink-soft); margin:0 0 10mm; font-weight:400; }
+  .cover .meta{ font-size:10pt; color:var(--ink-soft); line-height:1.9; }
+  .cover .meta b{ color:var(--ink); }
+  .cover .tag{
+    display:inline-block; background:var(--accent-soft); color:var(--accent);
+    padding:1.5mm 3mm; border-radius:2mm; font-size:9pt; font-weight:600;
+    margin-bottom:8mm;
+  }
+
+  /* ---------- structure ---------- */
+  h2{
+    font-size:16pt; font-weight:800; margin:11mm 0 3mm; padding-bottom:1.5mm;
+    border-bottom:2px solid var(--ink); letter-spacing:-.01em;
+    page-break-after:avoid;
+  }
+  h2 .n{ color:var(--accent); margin-right:2.5mm; }
+  h3{
+    font-size:11.5pt; font-weight:700; margin:6mm 0 2mm; color:var(--ink);
+    page-break-after:avoid;
+  }
+  h4{ font-size:10pt; font-weight:700; margin:4mm 0 1.5mm; color:var(--ink-soft);
+      text-transform:uppercase; letter-spacing:.06em; page-break-after:avoid; }
+  p{ margin:0 0 2.5mm; }
+  ul,ol{ margin:0 0 3mm; padding-left:5mm; }
+  li{ margin-bottom:1.2mm; }
+  code{
+    font-family:"DejaVu Sans Mono",monospace; font-size:8.8pt;
+    background:#eef1f6; padding:.3mm 1.2mm; border-radius:1mm; color:#2b3648;
+  }
+  pre{
+    font-family:"DejaVu Sans Mono",monospace; font-size:8.3pt; line-height:1.45;
+    background:#f5f7fa; border-left:2.5px solid var(--rule);
+    padding:3mm 3.5mm; margin:0 0 3.5mm; overflow:visible;
+    white-space:pre-wrap; page-break-inside:avoid;
+  }
+  mark{ background:var(--mark); padding:.2mm .8mm; }
+  .k{ font-weight:700; }
+
+  /* ---------- callouts ---------- */
+  .box{
+    border:1.2px solid var(--rule); border-radius:2mm; padding:3mm 3.5mm;
+    margin:0 0 3.5mm; page-break-inside:avoid; background:#fff;
+  }
+  .box .lbl{
+    font-size:8pt; font-weight:800; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--accent); display:block; margin-bottom:1.5mm;
+  }
+  .why{ background:var(--accent-soft); border-color:#bcdccb; }
+  .why .lbl{ color:var(--accent); }
+  .trap{ background:var(--warn-soft); border-color:#eccfb0; }
+  .trap .lbl{ color:var(--warn); }
+  .viva{ background:var(--flag-soft); border-color:#eec3cf; }
+  .viva .lbl{ color:var(--flag); }
+
+  /* ---------- definition list ---------- */
+  .defs{ margin:0 0 4mm; }
+  .def{
+    display:grid; grid-template-columns:40mm 1fr; gap:3mm;
+    padding:2mm 0; border-bottom:1px dotted var(--rule);
+    page-break-inside:avoid;
+  }
+  .def .t{ font-weight:700; color:var(--accent); }
+  .def .t span{ display:block; font-weight:400; font-size:8.3pt; color:var(--ink-soft); }
+  .def .d{ color:var(--ink); }
+
+  /* ---------- tables ---------- */
+  table{ width:100%; border-collapse:collapse; margin:0 0 4mm; font-size:9pt;
+         page-break-inside:avoid; }
+  th{ text-align:left; border-bottom:1.5px solid var(--ink); padding:1.8mm 2mm;
+      font-size:8.3pt; text-transform:uppercase; letter-spacing:.05em; }
+  td{ border-bottom:1px solid var(--rule); padding:1.8mm 2mm; vertical-align:top; }
+  tr.hi td{ background:var(--accent-soft); font-weight:600; }
+  .num{ font-variant-numeric:tabular-nums; }
+
+  /* ---------- flow diagram ---------- */
+  .flow{
+    font-family:"DejaVu Sans Mono",monospace; font-size:8.2pt; line-height:1.55;
+    background:#fff; border:1.2px solid var(--rule); border-radius:2mm;
+    padding:4mm; margin:0 0 4mm; white-space:pre; page-break-inside:avoid;
+  }
+
+  .lead{ font-size:11pt; color:var(--ink-soft); margin-bottom:4mm; }
+  .pagebreak{ page-break-before:always; }
+  .tight li{ margin-bottom:.6mm; }
+  .fine{ font-size:8.6pt; color:var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<!-- ======================= COVER ======================= -->
+<section class="cover">
+  <div class="worm">🪱</div>
+  <div class="tag">B.Tech Project · Full Revision Notes</div>
+  <h1>Bhunaga</h1>
+  <p class="sub"><span class="dev">भुनागा</span> — a trilingual agricultural RAG assistant for Indian farmers</p>
+  <div class="meta">
+    <b>What it is</b> &nbsp;Ask a farming question in Marathi, Hindi or English; get an answer<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;in the same language, grounded in documents, not model memory.<br>
+    <b>Scale</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~8,300 lines of Python · 24 documents · 114 chunks · 10 test files<br>
+    <b>Stack</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BGE-M3 · Qdrant / numpy · Groq GPT-OSS 120B · Streamlit · FastAPI<br>
+    <b>Cost</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Zero. One free API key, everything else free or local.
+  </div>
+  <p class="fine" style="margin-top:14mm">
+    These notes cover <b>why</b> the project exists, <b>how</b> every part works,
+    <b>what</b> each term means, and the <b>questions you will be asked</b> about it.
+    Read §4 before §5 if the vocabulary is new.
+  </p>
+</section>
+
+<!-- ======================= 1. WHY ======================= -->
+<h2><span class="n">1</span>Why this project exists</h2>
+
+<p class="lead">The information a farmer needs already exists and is already public.
+It just never reaches them in a form they can use.</p>
+
+<h3>The four-part problem</h3>
+
+<table>
+<tr><th style="width:32mm">Problem</th><th>What it actually means</th></tr>
+<tr><td><b>Wrong language</b></td><td>Package-of-practices documents, ICAR advisories and nearly every digital assistant are English-first. A farmer who thinks in Marathi cannot query them.</td></tr>
+<tr><td><b>Lossy translation</b></td><td>The standard workaround — translate the question to English, search, translate the answer back — loses domain vocabulary at every hop. Agricultural terms often have no clean English equivalent.</td></tr>
+<tr><td><b>Script ambiguity</b></td><td>Hindi and Marathi share the Devanagari script. Tools that guess language from characters confuse the two, then answer in the wrong one.</td></tr>
+<tr><td><b>Scattered sources</b></td><td>Price, weather, pest and agronomic data live on four unconnected portals. One real question — <i>"rain is coming, should I spray?"</i> — needs all four joined by hand.</td></tr>
+</table>
+
+<div class="box why">
+  <span class="lbl">Why not just use ChatGPT / a plain LLM?</span>
+  Two reasons, and both are fatal for this use case.
+  <b>It hallucinates specifics.</b> A wrong fertiliser dose reads exactly like a right one —
+  fluent, confident, and costing a farmer a season. <b>It has no live data.</b> Today's mandi
+  price and this week's forecast are simply not in the model's weights.
+  Grounding the answer in retrieved documents fixes the first; routing live questions to
+  real APIs fixes the second.
+</div>
+
+<div class="box trap">
+  <span class="lbl">The consequence nobody states</span>
+  When no trustworthy advice is available, the nearest source of pest advice becomes the
+  person selling the pesticide. That is a structural conflict of interest, and it is why
+  the Government's own National Pest Surveillance System was launched — explicitly to
+  reduce farmers' dependence on pesticide retailers.
+</div>
+
+<!-- ======================= 2. WHAT ======================= -->
+<h2><span class="n">2</span>What it does — one page</h2>
+
+<div class="flow">question in mr / hi / en
+      │
+      ├──► language detection ────────── lingua (a model, not the script)
+      │
+      ├──► intent router ─────────────── price? weather? spray? scheme? general?
+      │         │                        live-data questions skip retrieval
+      │         ▼
+      ├──► hybrid retrieval ──────────── BGE-M3 dense + sparse, RRF fusion
+      │                                  a Marathi query matches an English doc
+      │
+      ├──► generation ────────────────── one model, OR the council of three
+      │
+      └──► answer, in the question's language
+                │
+                └──► read aloud (browser TTS), cited, with a consensus score</div>
+
+<h4>Five things a farmer can do</h4>
+<ul class="tight">
+  <li><b>Ask</b> — by voice, by tapping a picture card, or by typing. All three are front doors, not fallbacks.</li>
+  <li><b>Today</b> — a daily brief: weather, spray window, soil, what to do now.</li>
+  <li><b>Money</b> — cost of cultivation, revenue, profit, break-even.</li>
+  <li><b>Market</b> — mandi prices with source and timestamp.</li>
+  <li><b>Listen</b> — every answer can be read aloud.</li>
+</ul>
+
+<div class="box why">
+  <span class="lbl">Why three ways to ask</span>
+  An advisory app that assumes literacy excludes most of the people it is meant to serve.
+  Voice input <i>without</i> voice output is half a bridge: the farmer speaks the question
+  and then lands on a screen full of text they cannot read. That is why the Listen button
+  matters more than it looks.
+</div>
+
+<!-- ======================= 3. RAG ======================= -->
+<h2><span class="n">3</span>The core idea — RAG</h2>
+
+<p><b>Retrieval-Augmented Generation.</b> Instead of asking a language model what it
+remembers, you first <i>retrieve</i> relevant passages from a trusted document collection,
+then hand those passages to the model and ask it to answer <i>from them</i>.</p>
+
+<div class="flow">WITHOUT RAG:   question ──────────────────────► LLM ──► answer from memory  ✗ unverifiable
+
+WITH RAG:      question ──► search documents ──► LLM ──► answer from those documents  ✓ citable
+                                 ▲
+                           your own corpus</div>
+
+<h3>Why RAG rather than fine-tuning</h3>
+<table>
+<tr><th style="width:30mm">Approach</th><th>Trade-off</th></tr>
+<tr><td><b>Fine-tuning</b></td><td>Bakes knowledge into weights. Expensive, needs retraining to update, and the model still cannot cite where an answer came from.</td></tr>
+<tr class="hi"><td><b>RAG</b></td><td>Knowledge stays in files. Add a PDF and the system knows it immediately. Every answer can name its source. Cheap. ← chosen</td></tr>
+<tr><td><b>Long context</b></td><td>Paste everything into the prompt. Works for small corpora, costs tokens linearly, and degrades as the corpus grows.</td></tr>
+</table>
+
+<div class="box viva">
+  <span class="lbl">Likely question</span>
+  <b>"Why not fine-tune on agricultural data?"</b> — Because advisories change every season
+  and a fine-tuned model cannot tell you which document a dose came from. Traceability is
+  the whole point when the answer is a chemical quantity.
+</div>
+
+<!-- ======================= 4. TERMINOLOGY ======================= -->
+<h2 class="pagebreak"><span class="n">4</span>Terminology — everything used in this project</h2>
+
+<h3>4.1 Language models</h3>
+<div class="defs">
+  <div class="def"><div class="t">LLM <span>Large Language Model</span></div><div class="d">A model trained to predict text. Here: GPT-OSS 120B, served by Groq. It writes the final answer; it does not decide the facts.</div></div>
+  <div class="def"><div class="t">Token</div><div class="d">The unit a model reads and bills in — roughly a word-piece. <mark>Devanagari costs several times more tokens than Latin for the same meaning</mark>, which is why Marathi answers hit limits first.</div></div>
+  <div class="def"><div class="t">Context window</div><div class="d">How much text the model can see at once — the question plus all retrieved chunks plus the answer.</div></div>
+  <div class="def"><div class="t">Hallucination</div><div class="d">A fluent, confident, wrong answer. The specific danger here is an invented dose or spray interval.</div></div>
+  <div class="def"><div class="t">Grounding</div><div class="d">Tying the answer to retrieved evidence. Measured in this project as the fraction of numbers in the answer that appear in the sources.</div></div>
+  <div class="def"><div class="t">Temperature</div><div class="d">Randomness of generation. Set to <code>0.2</code> — advice should be stable, not creative.</div></div>
+  <div class="def"><div class="t">Reasoning model</div><div class="d">A model that spends tokens thinking before it writes. GPT-OSS does this, <mark>out of the same budget as the answer</mark> — so too small a limit returns empty content, not an error.</div></div>
+  <div class="def"><div class="t">reasoning_effort</div><div class="d"><code>low / medium / high</code>. Set to <code>low</code>: fewer thinking tokens, lower cost, less risk of the answer being squeezed out.</div></div>
+  <div class="def"><div class="t">TPD / RPM</div><div class="d">Tokens-per-day and requests-per-minute rate limits. The free tier gives 200,000 TPD — a real design constraint, not a footnote.</div></div>
+</div>
+
+<h3>4.2 Embeddings and vectors</h3>
+<div class="defs">
+  <div class="def"><div class="t">Embedding</div><div class="d">A piece of text turned into a list of numbers (a vector) such that similar meanings land near each other.</div></div>
+  <div class="def"><div class="t">Vector / dimension</div><div class="d">The list itself. BGE-M3 produces <b>1024 dimensions</b> per chunk. The index here is a <code>(114, 1024)</code> float32 matrix.</div></div>
+  <div class="def"><div class="t">Cosine similarity</div><div class="d">Angle between two vectors — the standard measure of "how close in meaning".</div></div>
+  <div class="def"><div class="t">Shared vector space</div><div class="d"><mark>The idea the whole project rests on.</mark> A multilingual encoder places <span class="dev">युरिया</span>, urea and <span class="dev">यूरिया</span> at nearly the same point. So a Marathi question retrieves an English document with no translation step.</div></div>
+  <div class="def"><div class="t">BGE-M3</div><div class="d">The embedding model used. Multilingual, and emits dense <i>and</i> sparse vectors from one pass — so no separate keyword index is needed.</div></div>
+  <div class="def"><div class="t">Dense vector</div><div class="d">Captures meaning. Finds "how much nitrogen" when the document says "urea dose".</div></div>
+  <div class="def"><div class="t">Sparse vector</div><div class="d">Captures exact words. Finds "PM-KISAN" when that exact string matters. Conceptually BM25 / TF-IDF.</div></div>
+  <div class="def"><div class="t">Chunking</div><div class="d">Splitting documents into retrievable pieces. 24 documents → 114 chunks here.</div></div>
+</div>
+
+<div class="box why">
+  <span class="lbl">Why you need both dense and sparse</span>
+  Dense alone misses exact identifiers — scheme names, chemical names, numbers. Sparse alone
+  misses paraphrase — a farmer asking in different words than the document used. Agricultural
+  questions contain both kinds at once, which is why hybrid search is not optional here.
+</div>
+
+<h3>4.3 Search and retrieval</h3>
+<div class="defs">
+  <div class="def"><div class="t">Vector database</div><div class="d">Stores vectors and finds the nearest ones fast. Here: <b>Qdrant</b>, with a numpy-on-disk fallback.</div></div>
+  <div class="def"><div class="t">Collection / payload</div><div class="d">Qdrant's table equivalent, and the metadata stored beside each vector (text, source file, source language).</div></div>
+  <div class="def"><div class="t">top-k</div><div class="d">How many chunks to hand the model. Set to <b>8</b>.</div></div>
+  <div class="def"><div class="t">Prefetch</div><div class="d">Pull a wider set (30) from each search before fusing, so the fusion has something to work with.</div></div>
+  <div class="def"><div class="t">Hybrid search</div><div class="d">Running dense and sparse searches and combining the two ranked lists.</div></div>
+  <div class="def"><div class="t">RRF <span>Reciprocal Rank Fusion</span></div><div class="d">The combining rule. Each list contributes <code>1/(k + rank)</code> per document; scores are summed. Uses <i>rank</i>, not raw score, so two incomparable scoring systems can be merged. <mark>Consequence: RRF scores are tiny — around 0.01–0.03.</mark></div></div>
+  <div class="def"><div class="t">source_lang</div><div class="d">Each chunk is tagged with the language it was written in, so retrieval quality can be measured per language.</div></div>
+</div>
+
+<h3>4.4 Everything else</h3>
+<div class="defs">
+  <div class="def"><div class="t">Language ID</div><div class="d">Deciding which language a text is in. Done with <b>lingua</b>, a statistical model — <mark>script alone cannot separate Hindi from Marathi.</mark></div></div>
+  <div class="def"><div class="t">Intent routing</div><div class="d">Classifying the question before retrieval: price / weather / spray / scheme / general. A keyword matcher, not a model call — sub-millisecond, free, and debuggable.</div></div>
+  <div class="def"><div class="t">Multi-agent</div><div class="d">Several model roles collaborating instead of one. Here: three experts plus a chairman.</div></div>
+  <div class="def"><div class="t">Consensus / agreement</div><div class="d">How much the experts agreed. Partly the chairman's judgement, partly a model-free word-overlap measure.</div></div>
+  <div class="def"><div class="t">Rules engine</div><div class="d">Plain code making a decision from numbers — the spray window. No model involved, so no invention possible.</div></div>
+  <div class="def"><div class="t">STT / TTS</div><div class="d">Speech-to-text (Whisper on Groq) and text-to-speech (the browser's own engine — free, offline, and the audio never leaves the phone).</div></div>
+  <div class="def"><div class="t">Ablation</div><div class="d">Switching a feature off to measure what it was contributing. The central experiment in §10.</div></div>
+  <div class="def"><div class="t">IVR</div><div class="d">Interactive Voice Response — answering an ordinary phone call. For farmers with no smartphone.</div></div>
+</div>
+
+<!-- ======================= 5. PIPELINE ======================= -->
+<h2 class="pagebreak"><span class="n">5</span>The pipeline, stage by stage</h2>
+
+<h3>Stage 1 — Language detection &nbsp;<span class="fine"><code>farmer/language_detector.py</code></span></h3>
+<p>Detect once, carry the result as a tag, and reply in it. The detected language is threaded
+into the generation prompt as <code>Answer in {language}</code>.</p>
+<div class="box trap">
+  <span class="lbl">The trap this avoids</span>
+  Hindi and Marathi are both written in Devanagari. A script check sees the same characters
+  for both and cannot tell them apart — so the system would answer a Marathi farmer in Hindi
+  and look broken. A real language-ID model is a <i>requirement</i> here, not a refinement.
+</div>
+
+<h3>Stage 2 — Intent routing &nbsp;<span class="fine"><code>farmer/intent.py</code></span></h3>
+<p>Classify into price / weather / spray / scheme / general <b>before</b> retrieving.</p>
+<div class="box why">
+  <span class="lbl">Why this exists</span>
+  Some questions <b>cannot</b> be answered from documents. <i>"What is onion selling for today?"</i>
+  has no answer in any PDF. Retrieving a storage guide and generating a confident paragraph
+  from it is worse than useless — it looks like an answer. Those questions get routed to live
+  data instead, with a line explaining why.
+  <br><br>
+  It is a keyword matcher rather than a model call on purpose: it runs in under a millisecond,
+  costs nothing against a free tier already carrying several calls per question, and when it is
+  wrong you can see exactly which word caused it. Keywords are listed in all three languages —
+  a Marathi speaker asking about price says <span class="dev">भाव</span>, not "price".
+</div>
+
+<h3>Stage 3 — Hybrid retrieval &nbsp;<span class="fine"><code>farmer/searcher.py</code></span></h3>
+<div class="flow">query ──► BGE-M3 ──┬──► dense vector  ──► Qdrant dense search  ──► 30 results ──┐
+                   │                                                              ├──► RRF ──► top 8
+                   └──► sparse vector ──► Qdrant sparse search ──► 30 results ──┘</div>
+<p>One embedding call produces both vectors. Both searches run, RRF fuses the two rankings,
+the top 8 chunks go to generation.</p>
+
+<h3>Stage 4 — Generation &nbsp;<span class="fine"><code>farmer/answer_writer.py</code></span></h3>
+<p>Either one model answering alone, or the council (§6). Everything that talks to Groq goes
+through a single <code>chat()</code> function, so there is exactly one place that knows the
+API's shape.</p>
+
+<div class="box trap">
+  <span class="lbl">Bug found and fixed here</span>
+  GPT-OSS spends tokens reasoning before it writes. With the budget too low, <code>content</code>
+  comes back as an <b>empty string — not an error</b>. Returning that silently produces a blank
+  answer that looks like the model had nothing to say. The code now raises with the cause.
+  Marathi was most at risk, because Devanagari costs more tokens per answer.
+</div>
+
+<!-- ======================= 6. COUNCIL ======================= -->
+<h2><span class="n">6</span>The council of experts</h2>
+
+<p>One model answering alone has nobody to check it. So the same retrieved chunks are read by
+three specialists with different remits, and a chairman merges them.</p>
+
+<div class="flow">              question + the SAME retrieved chunks
+                            │
+         ┌──────────────────┼──────────────────┐
+         ▼                  ▼                  ▼
+   🌱 Agronomist      💰 Farm Economist   📜 Scheme Officer
+   dose, timing       cost, yield, risk   eligibility, subsidy
+         │                  │                  │
+         └──────────────────┼──────────────────┘
+                            ▼
+                     🧑‍⚖️ Chairman
+                            │
+          merged answer + agreement score + list of clashes</div>
+
+<h3>Three points to defend in a viva</h3>
+<ol>
+  <li><b>Different jobs, not different seeds.</b> Running one prompt three times gives you the
+  same answer three times. Each seat has its own remit, so the opinions genuinely differ — and
+  therefore agreement between them carries information.</li>
+  <li><b>Silence is a valid answer.</b> "How much urea per acre" has nothing in it for the Scheme
+  Officer, so it replies <code>NO_INPUT</code> and is dropped from the count. A council where
+  everyone always talks is not a council.</li>
+  <li><b>The agreement score is not self-reported.</b> The chairman gives a number, but word
+  overlap between the opinions is measured separately in <code>council/agreement.py</code> with
+  <mark>no model involved</mark>, and the two are blended 70/30. The UI shows both, so you can
+  see when the chairman is flattering itself.</li>
+</ol>
+
+<div class="box viva">
+  <span class="lbl">Likely question</span>
+  <b>"Isn't this just the same model three times?"</b> — Same weights, different roles and
+  different prompts. The test is whether they ever disagree: they do, and the disagreement is
+  surfaced rather than hidden. If they never disagreed, the consensus score would be
+  meaningless and we would say so.
+</div>
+
+<!-- ======================= 7. DETERMINISTIC ======================= -->
+<h2 class="pagebreak"><span class="n">7</span>The parts that use no model at all</h2>
+
+<p class="lead">The most defensible modules in this project are the ones where the language
+model is deliberately kept out of the decision.</p>
+
+<h3>7.1 The spray window &nbsp;<span class="fine"><code>farmer/spray.py</code></span></h3>
+<p>Every daylight hour of the next two days is scored against plain rules:</p>
+<ul class="tight">
+  <li>wind low enough that spray does not drift off the field</li>
+  <li>no rain forecast within the rainfastness period — rain washes it off</li>
+  <li>temperature not so high that it evaporates</li>
+</ul>
+<p>Good stretches are named — <i>"Saturday 07:00–09:00"</i> — and <b>every rejected hour says
+why it was rejected</b>, so it is not a black box.</p>
+
+<div class="box why">
+  <span class="lbl">Why compute it instead of asking the model</span>
+  Asking a language model which hours are windy is inviting it to invent an answer to a question
+  we can calculate exactly. The hours are worked out in code and handed to the model
+  <i>already decided</i>. The model's job is to phrase it, not to determine it.
+  <br><br>
+  This is also the economic argument: spraying into wind blows the chemical off the field, and
+  rain within a few hours washes it away. Both mean the money was spent for nothing.
+</div>
+
+<div class="box trap">
+  <span class="lbl">Demo warning</span>
+  In clear weather the rules reject nothing and the advice becomes "06:00–19:00", which looks
+  like a rubber stamp. Same code, different forecast:
+  <pre style="margin:2mm 0 0">Nashik    28/28 hours good  ->  "Friday 06:00-19:00"     clear,   0 mm
+Chennai   28/28 hours good  ->  "Friday 06:00-19:00"     clear,   3 mm
+Kochi      5/28 hours good  ->  "Saturday 07:00-09:00"   drizzle, 44 mm</pre>
+</div>
+
+<h3>7.2 Mandi prices &nbsp;<span class="fine"><code>farmer/mandi_prices.py</code></span></h3>
+<p>Live wholesale prices from data.gov.in, which publishes the AGMARKNET feed — minimum,
+maximum and modal price per commodity per market, plus arrival quantities.</p>
+
+<div class="box trap">
+  <span class="lbl">The silent-failure bug worth telling</span>
+  The API accepts an <i>old</i> filter spelling (<code>filters[state]</code>) and a
+  <i>current</i> one (<code>filters[State.keyword]</code>). Guessing wrong does not raise an
+  error — <mark>it returns HTTP 200 with zero records</mark>. That is exactly how the app ended
+  up quietly showing sample prices while appearing to work.
+  <br><br>
+  So the client does not guess. It tries each spelling until one returns rows, remembers the
+  winner for the session, and reads every column through a list of aliases. If all filtered
+  calls fail it fetches unfiltered and filters in Python.
+  <br><br>
+  <b>Refinement:</b> a timeout is <i>not</i> the same failure. Zero-rows means the spelling was
+  wrong, so try the next; a timeout means the host is not answering, and no spelling fixes that.
+  The ladder now stops after two consecutive network failures instead of paying a 20-second
+  timeout six times over.
+</div>
+
+<h3>7.3 Cost calculator</h3>
+<p>Seeds, fertiliser, labour, irrigation, machinery, transport against yield and selling price
+→ revenue, total cost, profit, cost per kg, break-even price. Arithmetic in Python. No model.</p>
+
+<!-- ======================= 8. CHANNELS ======================= -->
+<h2><span class="n">8</span>Three ways in</h2>
+
+<div class="flow">Streamlit web app ─┐
+WhatsApp message  ─┼──►  assistant.ask()  ──► intent ─► retrieval ─► council ─► answer
+IVR phone call    ─┘</div>
+
+<p><code>farmer/assistant.py</code> takes a question and returns an answer <b>knowing nothing
+about screens</b>. Each channel only converts its own message format in and out. That is why
+adding a channel is a small change rather than a rewrite.</p>
+
+<ul class="tight">
+  <li><b>WhatsApp</b> — names its sources, and when agreement is low it <i>says so in words</i>, because on a phone there is no panel to expand and an unstated disagreement is invisible.</li>
+  <li><b>IVR</b> — records the caller, transcribes with Whisper, reads the answer back with citation markers and bullets stripped out, because those are meaningless out loud.</li>
+</ul>
+
+<p class="fine"><b>Stated honestly:</b> the webhook is written against Twilio's documented request
+and TwiML formats and is fully tested offline, but has never been run against Twilio's live
+servers.</p>
+
+<!-- ======================= 9. EVALUATION ======================= -->
+<h2><span class="n">9</span>How it is measured</h2>
+
+<p>12 questions, each written in all three languages, so cross-language consistency is measured
+too. Every question is answerable from a real file and names its expected source.</p>
+
+<table>
+<tr><th style="width:34mm">Metric</th><th>What it means</th></tr>
+<tr><td><code>hit@k</code></td><td>A relevant keyword appears anywhere in the top-k chunks. Lenient.</td></tr>
+<tr><td><code>keyword_recall</code></td><td>What <i>fraction</i> of expected keywords were found. Strict — this is the honest one.</td></tr>
+<tr><td><code>MRR</code></td><td>Mean Reciprocal Rank — <code>1 / rank</code> of the first relevant chunk. Rewards putting the right thing first.</td></tr>
+<tr><td><code>same_lang</code></td><td>Fraction of retrieved chunks in the query's language. <mark>A diagnostic, not a target</mark> — see §10.</td></tr>
+<tr><td><code>lang_ok</code></td><td>Did the answer come back in the requested language (re-detected, not assumed).</td></tr>
+<tr><td><code>answer_kw</code></td><td>Did the model actually <i>use</i> what retrieval found.</td></tr>
+<tr class="hi"><td><code>grounded</code></td><td><b>Fraction of the numbers in the answer that appear in the sources.</b></td></tr>
+</table>
+
+<div class="box why">
+  <span class="lbl">Why <code>grounded</code> is the metric that matters</span>
+  Advice to a farmer is mostly numbers — 50 kg of urea, ₹6,000, 72 hours. Waffly prose is
+  harmless; a wrong dose is not. So the measure is: of every number the model wrote, how many
+  can be traced back to a source document? Devanagari digits are normalised, so
+  <span class="dev">५०</span> and 50 count as the same number.
+  <br><br>
+  This is also what makes the multi-agent claim <i>testable</i> rather than decorative.
+</div>
+
+<!-- ======================= 10. ABLATION ======================= -->
+<h2 class="pagebreak"><span class="n">10</span>The headline result — the boost that never helped</h2>
+
+<p class="lead">This is the strongest thing in the project. Lead with it.</p>
+
+<h3>What was built</h3>
+<p>Each chunk is tagged with its source language. A <code>SAME_LANG_BOOST</code> was added to
+nudge evidence in the query's own language slightly higher at fusion time. Reasonable idea.</p>
+
+<h3>What was actually happening</h3>
+<pre>score = fused_RRF_score      # ~0.01 to 0.03
+score = score + 0.10         # several TIMES the entire spread</pre>
+
+<p>Because RRF scores are tiny, a flat <code>+0.10</code> was not a nudge — it was an override.
+<mark>Every same-language chunk outranked every cross-language chunk, regardless of what either
+one said.</mark> A feature described as a tie-breaker was in practice a hard language filter,
+and it was switching off the cross-lingual retrieval the entire project exists to demonstrate.</p>
+
+<h3>How it was caught</h3>
+<p><code>same_lang</code> came back at <b>1.00 for every Marathi query</b> — from a corpus
+holding only 12 Marathi chunks out of 114. The same handful of chunks was returned whatever the
+question asked about. The metric exposed it; nothing else would have.</p>
+
+<h3>Three conditions measured</h3>
+<table>
+<tr><th>Condition</th><th class="num">en</th><th class="num">hi</th><th class="num">mr</th><th class="num">mr MRR</th><th class="num">mr same_lang</th></tr>
+<tr><td>additive <code>+0.10</code> (the bug)</td><td class="num">0.46</td><td class="num">0.33</td><td class="num">0.33</td><td class="num">0.74</td><td class="num">1.00</td></tr>
+<tr><td>ratio <code>×1.10</code> (fixed)</td><td class="num">0.46</td><td class="num">0.55</td><td class="num">0.48</td><td class="num">0.76</td><td class="num">0.71</td></tr>
+<tr class="hi"><td>no boost — <b>shipped</b></td><td class="num">0.46</td><td class="num">0.60</td><td class="num">0.54</td><td class="num">0.81</td><td class="num">0.64</td></tr>
+</table>
+<p class="fine">Figures are keyword recall unless the column says otherwise.</p>
+
+<h3>What it means — three readings</h3>
+<ol>
+  <li><b>Fixing it helped; removing it helped more.</b> BGE-M3's shared vector space already did
+  the cross-lingual work. The hand-written heuristic layered on top only subtracted.</li>
+  <li><b>English is flat at 0.46 across all three conditions — this is the control.</b> 83% of
+  the corpus is English, so the boost is nearly a no-op for English queries. A harness that
+  moved English here would be measuring something other than what it claims. <i>Point at this
+  row first.</i></li>
+  <li><b><code>same_lang</code> moves against quality</b> — 1.00 → 0.71 → 0.64 for Marathi
+  <i>while recall climbs</i>. A high value means the retriever was <i>confined</i>, not
+  confident. It is a diagnostic, not a score to maximise.</li>
+</ol>
+
+<div class="box trap">
+  <span class="lbl">State the limitation before you are asked</span>
+  n = 12 questions. The additive-versus-anything gap is far too large to be noise. Ratio versus
+  off is suggestive, not settled. Saying this yourself is worth more than being caught on it.
+</div>
+
+<div class="box viva">
+  <span class="lbl">How to tell this story</span>
+  "We added multi-agent consensus" is a claim anyone can make. <b>"Our own heuristic was
+  silently disabling the cross-lingual retrieval the project is built on; the metrics caught it,
+  we measured three conditions, and we deleted the feature"</b> is a result — and it required
+  building the measurement <i>before</i> trusting the design. The negative result is the
+  stronger half.
+</div>
+
+<!-- ======================= 11. DECISIONS ======================= -->
+<h2><span class="n">11</span>Design decisions — why this and not that</h2>
+
+<table>
+<tr><th style="width:38mm">Decision</th><th>Reason</th></tr>
+<tr><td><b>BGE-M3</b>, not separate per-language models</td><td>One shared vector space means a Marathi query matches an English document directly. Separate models would need a translation hop, which is the thing being avoided.</td></tr>
+<tr><td><b>No translate-to-English</b> step</td><td>Every hop loses domain vocabulary, adds latency and adds cost.</td></tr>
+<tr><td><b>lingua</b> for language ID</td><td>Pure Python, no compiler, no model download — and it separates Hindi from Marathi, which script cannot.</td></tr>
+<tr><td><b>Keyword</b> intent router, not a model</td><td>Sub-millisecond, free, and inspectable when wrong.</td></tr>
+<tr><td><b>Rules</b> for the spray window</td><td>A computable question should be computed. Explainable, and cannot hallucinate.</td></tr>
+<tr><td><b>Qdrant with a numpy fallback</b></td><td>A free Qdrant cluster is switched off after a few idle weeks. Finding that out on the morning of a demo is a bad time to find it out.</td></tr>
+<tr><td><b>Groq free tier</b></td><td>Zero cost. The constraint it imposes is real and is designed around, not ignored.</td></tr>
+<tr><td><b>Browser TTS</b>, not an API</td><td>No key, no cost, works offline once loaded, and the audio never leaves the phone.</td></tr>
+<tr><td><b>Streamlit</b></td><td>The whole UI is Python. The project's value is in retrieval and evaluation, not in a frontend build.</td></tr>
+<tr><td><b>Index committed</b> to the repo</td><td>A free Space sleeps and wakes with a clean disk. An index built at runtime is gone by the next visitor.</td></tr>
+</table>
+
+<!-- ======================= 12. FAILURE ======================= -->
+<h2><span class="n">12</span>Failure handling — it degrades, it does not crash</h2>
+
+<table>
+<tr><th style="width:42mm">When this fails</th><th>This happens instead</th></tr>
+<tr><td>One council expert errors</td><td>Marked failed, dropped; the rest continue</td></tr>
+<tr><td>Only one expert speaks</td><td>Chairman is skipped entirely</td></tr>
+<tr><td>The whole council falls over</td><td>Plain single-model answer is served</td></tr>
+<tr><td>Qdrant cluster is gone</td><td>Numpy index on disk, same RRF fusion</td></tr>
+<tr><td>Price API unreachable</td><td>Clearly labelled sample data + "NOT today's rates"</td></tr>
+<tr><td>Soil lookup times out</td><td>Daily brief drops the soil card, keeps the weather</td></tr>
+<tr><td>Index is empty</td><td>Evaluation refuses to run and names the fix</td></tr>
+<tr><td>Model returns empty content</td><td>Raises with the cause instead of a blank answer</td></tr>
+</table>
+
+<div class="box why">
+  <span class="lbl">Why this is worth a slide of its own</span>
+  Every one of those rows is a real failure that actually happened during development. If
+  something breaks during the demo, <b>name the fallback that fired</b> — that is the system
+  working as designed, and saying so is stronger than reloading and hoping.
+</div>
+
+<!-- ======================= 13. LIMITS ======================= -->
+<h2><span class="n">13</span>Known limits — say these first</h2>
+
+<ul>
+  <li><b>The corpus is illustrative.</b> The 24 documents are written for the demo and several
+  say so in their own first line. Fine for a demo; <b>not</b> fine for a farmer acting on a
+  dose. Real ICAR/KVK material must replace them before any real use.</li>
+  <li><b>Keyword recall tops out around 0.46–0.60.</b> Retrieval finds something relevant almost
+  every time (<code>hit@k</code> = 1.00) but only about half the expected facts. Chunk size and
+  <code>top-k</code> are where to look.</li>
+  <li><b>No crop calendar.</b> The profile stores crops but not sowing dates, so advice is not
+  staged by growth stage.</li>
+  <li><b>The Twilio webhook has never run live.</b></li>
+  <li><b>A public deployment spends one shared API key</b> on every visitor. No auth, no
+  per-user limiting.</li>
+  <li><b>n = 12</b> on the evaluation set.</li>
+</ul>
+
+<!-- ======================= 14. VIVA ======================= -->
+<h2 class="pagebreak"><span class="n">14</span>Viva questions and answers</h2>
+
+<div class="box viva"><span class="lbl">Q — What is RAG and why use it here?</span>
+Retrieve relevant passages from a trusted corpus, then make the model answer from them rather
+than from memory. Used here because agricultural advice is mostly numbers, a hallucinated dose
+costs a season, and every answer needs to name its source.</div>
+
+<div class="box viva"><span class="lbl">Q — How does a Marathi question find an English document?</span>
+BGE-M3 is multilingual and places text from all three languages in one shared vector space, so
+<span class="dev">युरिया</span> and "urea" land near each other. No translation step is involved.</div>
+
+<div class="box viva"><span class="lbl">Q — Why not detect language from the script?</span>
+Hindi and Marathi both use Devanagari. The characters are identical, so a script check cannot
+distinguish them and would answer in the wrong language. lingua is a statistical model and can.</div>
+
+<div class="box viva"><span class="lbl">Q — Why both dense and sparse vectors?</span>
+Dense captures meaning and handles paraphrase; sparse captures exact strings like scheme names
+and chemical names. Farming questions contain both. BGE-M3 emits both from one pass, so there
+is no separate BM25 index to maintain.</div>
+
+<div class="box viva"><span class="lbl">Q — What is RRF and why use it?</span>
+Reciprocal Rank Fusion. Each result list contributes <code>1/(k+rank)</code> per document and
+the scores are summed. It uses rank rather than raw score, so two scoring systems that are not
+comparable can still be merged. Its scores are small — about 0.01–0.03 — which is exactly what
+made our boost bug possible.</div>
+
+<div class="box viva"><span class="lbl">Q — What was your most interesting finding?</span>
+That our own same-language boost was a hard filter rather than a tie-breaker, and that removing
+it entirely beat both fixing it and keeping it. The encoder did not need our help. The English
+control row proves the harness was measuring the right thing.</div>
+
+<div class="box viva"><span class="lbl">Q — Is the council real, or one model three times?</span>
+Same weights, three distinct remits and prompts. They disagree, the disagreement is surfaced,
+and the agreement score is partly computed without any model so the chairman cannot inflate it.</div>
+
+<div class="box viva"><span class="lbl">Q — How do you know the model is not making numbers up?</span>
+The <code>grounded</code> metric: the fraction of numbers in the answer that appear in the
+retrieved sources, with Devanagari digits normalised.</div>
+
+<div class="box viva"><span class="lbl">Q — What happens when a service goes down?</span>
+Every path degrades rather than crashing — see §12. During development Qdrant was deleted,
+SoilGrids went down, data.gov.in became unreachable and Groq retired our model. The app
+survived all four.</div>
+
+<div class="box viva"><span class="lbl">Q — What would you do next?</span>
+Real ICAR/KVK documents instead of illustrative ones; crop-calendar and growth-stage filtering;
+a larger evaluation set than 12 questions; and a disease-identification path from a photo.</div>
+
+<!-- ======================= 15. CHEATSHEET ======================= -->
+<h2><span class="n">15</span>One-page cheat sheet</h2>
+
+<table>
+<tr><th style="width:38mm">Thing</th><th>Value</th></tr>
+<tr><td>Languages</td><td>Marathi, Hindi, English — in, out, and the whole interface</td></tr>
+<tr><td>Embedding model</td><td>BGE-M3, 1024 dimensions, dense + sparse</td></tr>
+<tr><td>Vector store</td><td>Qdrant, with numpy-on-disk fallback (same RRF)</td></tr>
+<tr><td>Fusion</td><td>Reciprocal Rank Fusion, prefetch 30 each, top-k 8</td></tr>
+<tr><td>Generation</td><td>GPT-OSS 120B on Groq, temperature 0.2, reasoning_effort low</td></tr>
+<tr><td>Speech</td><td>Whisper (in) · browser TTS (out)</td></tr>
+<tr><td>Corpus</td><td>24 documents → 114 chunks · 20 en, 2 hi, 2 mr</td></tr>
+<tr><td>Eval set</td><td>12 questions × 3 languages = 36 rows</td></tr>
+<tr><td>Headline result</td><td>Same-language boost removed; hi recall 0.33 → 0.60, mr 0.33 → 0.54</td></tr>
+<tr><td>Channels</td><td>Streamlit · WhatsApp · IVR, all over one <code>assistant.ask()</code></td></tr>
+<tr><td>Free-tier ceiling</td><td>200,000 tokens/day — a design constraint, not a footnote</td></tr>
+<tr><td>Total cost</td><td>₹0</td></tr>
+</table>
+
+<div class="box why">
+  <span class="lbl">If you remember three sentences</span>
+  <b>One.</b> A multilingual encoder lets a Marathi question retrieve an English document
+  directly, so nothing is translated and nothing is lost.
+  <b>Two.</b> Anything computable is computed — spray hours, costs, prices — and the model only
+  phrases the result.
+  <b>Three.</b> We measured our own feature, found it was doing the opposite of what we
+  intended, and removed it.
+</div>
+
+</body>
+</html>
