@@ -79,6 +79,35 @@ def run_one(item: dict, lang: str, do_generate: bool,
     return row
 
 
+def preflight() -> None:
+    """Refuse to score anything against an index that is not there.
+
+    An empty index does not crash. searcher.retrieve returns an empty list,
+    every metric comes out 0.00, and the results table looks exactly like a
+    model that cannot retrieve -- which sends you debugging the embeddings
+    instead of running ingest.py. The two failures are indistinguishable from
+    the scores alone, so check which one it is before scoring anything.
+    """
+    from farmer import vector_database
+
+    vector_database.reset()
+    client = vector_database.get_client()
+    where = vector_database.backend()
+    count = vector_database.count(client)
+
+    if count > 0:
+        print(f"index: {count} chunks  |  backend: {where}")
+        return
+
+    print(f"\nThe knowledge base is empty -- 0 chunks on the {where} backend.")
+    if where != "qdrant":
+        print(f"Qdrant was not used: {vector_database.why_local()}")
+    print("\nEvery metric below would be 0.00, which reads as a retrieval")
+    print("failure rather than a missing index. Build the index first:\n")
+    print("    python ingest.py --recreate\n")
+    raise SystemExit(1)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--questions", default="eval/questions.json")
@@ -95,6 +124,8 @@ def main():
                     help="'both' runs each question twice, once with a single "
                          "model and once with the council, and reports the gap")
     args = ap.parse_args()
+
+    preflight()
 
     items = load_questions(Path(args.questions))
     do_generate = not args.no_generate

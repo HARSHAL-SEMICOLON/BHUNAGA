@@ -62,7 +62,8 @@ def check_vector_store() -> None:
     print(f"       {count} chunks indexed"
           if count >= 0 else "       could not count chunks")
     if count == 0:
-        print("       -> open the app and press 'Load sample KB' in the sidebar")
+        print("       -> nothing is indexed. Either press 'Load sample KB'")
+        print("          in the app sidebar, or run:  python ingest.py --recreate")
 
 
 def check_place(name: str):

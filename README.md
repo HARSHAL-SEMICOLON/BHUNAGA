@@ -11,7 +11,7 @@ Built entirely on a free / local stack.
 
 ```
 question ──► [language detection]──► [hybrid retrieval] ──► [generation] ──► answer
-             lingua detector          BGE-M3 dense+sparse     Llama 3.3 70B    (same language)
+             lingua detector          BGE-M3 dense+sparse     GPT-OSS 120B     (same language)
              (hi vs mr by model,       over Qdrant             via Groq
               not script)                                      + optional IndicTrans2
 ```
@@ -251,7 +251,7 @@ Everything here is free. Only one needs a key at all.
 
 | What | Service | Key? | Used for |
 |---|---|---|---|
-| Answers, voice | Groq (Llama 3.3, Whisper) | yes, free | the council, and speech → text |
+| Answers, voice | Groq (GPT-OSS 120B, Whisper) | yes, free | the council, and speech → text |
 | Village → coordinates | Open-Meteo geocoding | no | cached on disk, looked up once per village |
 | Weather, 7-day outlook | Open-Meteo forecast | no | sowing and harvest timing |
 | Spray window | Open-Meteo hourly | no | which hours today are safe to spray |
@@ -308,7 +308,7 @@ than Qdrant 1.9") rather than showing a stack trace.
 
 ## The Marathi A/B switch (publication-worthy)
 
-Groq's Llama 3.3 70B handles English and Hindi well and Marathi reasonably.
+Groq's GPT-OSS 120B handles English and Hindi well and Marathi reasonably.
 Where Marathi output quality dips, you can keep reasoning in English and only
 translate the final answer with IndicTrans2. This is a config flag so you can
 compare both paths in evaluation:
@@ -411,7 +411,7 @@ variants of each fact.
 | Language ID      | lingua (pure-Python)              | free  |
 | Embeddings       | BGE-M3 (dense + sparse)           | free  |
 | Vector store     | Qdrant (local Docker)             | free  |
-| Generation       | Llama 3.3 70B via Groq            | free* |
+| Generation       | GPT-OSS 120B via Groq             | free* |
 | Marathi fallback | IndicTrans2 (local)               | free  |
 
 \* Groq free tier, rate-limited.

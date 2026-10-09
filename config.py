@@ -69,7 +69,7 @@ PREFETCH_K = 30                           # how many we pull from each search be
 # Give a small bonus to text in the same language as the question.
 SAME_LANG_BOOST = 0.10                    # set to 0 to turn this off
 
-# the AI that writes the answer (Groq, Llama 3.3)
+# the AI that writes the answer (Groq, GPT-OSS 120B)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 # key for market prices. if the user has none, we use a shared demo key
 # so the Market tab still works. you can add your own key in .env.
@@ -77,7 +77,10 @@ DATA_GOV_DEMO_KEY = "579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b"
 _dg = (os.getenv("DATA_GOV_API_KEY") or "").strip()
 # if the key is missing or too short, use the demo key instead
 DATA_GOV_API_KEY = _dg if len(_dg) >= 20 else DATA_GOV_DEMO_KEY
-GROQ_MODEL = "llama-3.3-70b-versatile"
+# Groq retired llama-3.3-70b-versatile on 2026-08-16 (404 model_not_found).
+# Its documented replacement is openai/gpt-oss-120b. Env-overridable so the
+# next retirement is a .env change, not a code change.
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 GEN_TEMPERATURE = 0.2
 GEN_MAX_TOKENS = 1024
 

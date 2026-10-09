@@ -2,7 +2,7 @@
 qdrant-client>=1.9.0          # vector store, native dense + sparse
 FlagEmbedding>=1.2.10         # BGE-M3 multilingual dense+sparse embeddings
 lingua-language-detector>=2.0 # en/hi/mr language ID (pure-Python, no compiler)
-groq>=0.11.0                  # Llama 3.3 70B generation (free tier API)
+groq>=0.11.0                  # GPT-OSS 120B generation (free tier API)
 
 # --- Document ingestion ---
 pypdf>=4.2.0                  # PDF text extraction

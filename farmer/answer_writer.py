@@ -1,5 +1,5 @@
 """
-Write the final answer with the Groq AI model (Llama 3.3).
+Write the final answer with the Groq AI model (GPT-OSS 120B).
 
 We always tell the model which language to answer in, so it never guesses. It
 answers only from the documents we give it.
