@@ -55,14 +55,38 @@ def chat(system: str, user: str, temperature: float | None = None,
     including the council, so there is only one place that knows the API shape.
     """
     client = _groq_client()
-    resp = client.chat.completions.create(
+    kwargs = dict(
         model=model or config.GROQ_MODEL,
         temperature=config.GEN_TEMPERATURE if temperature is None else temperature,
         max_tokens=max_tokens or config.GEN_MAX_TOKENS,
         messages=[{"role": "system", "content": system},
                   {"role": "user", "content": user}],
     )
-    return resp.choices[0].message.content.strip()
+    if config.GROQ_REASONING_EFFORT:
+        kwargs["reasoning_effort"] = config.GROQ_REASONING_EFFORT
+
+    try:
+        resp = client.chat.completions.create(**kwargs)
+    except Exception:
+        # Not every model accepts reasoning_effort, and the ones that do not
+        # reject the whole request rather than ignoring the field. Drop it and
+        # try once more before giving up.
+        if "reasoning_effort" not in kwargs:
+            raise
+        kwargs.pop("reasoning_effort")
+        resp = client.chat.completions.create(**kwargs)
+
+    text = (resp.choices[0].message.content or "").strip()
+    if not text:
+        # A reasoning model that spends its whole budget thinking returns an
+        # empty string, not an error. Silently passing that on produces a blank
+        # answer that looks like the model had nothing to say. Say what it was.
+        raise RuntimeError(
+            f"{kwargs['model']} returned no content. The token budget "
+            f"(max_tokens={kwargs['max_tokens']}) was most likely consumed by "
+            f"reasoning -- raise GEN_MAX_TOKENS or lower GROQ_REASONING_EFFORT."
+        )
+    return text
 
 
 def _format_context(chunks: list[RetrievedChunk]) -> str:

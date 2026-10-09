@@ -38,10 +38,16 @@ def check_groq() -> None:
     try:
         from groq import Groq
         reply = Groq(api_key=config.GROQ_API_KEY).chat.completions.create(
-            model=config.GROQ_MODEL, max_tokens=5,
+            model=config.GROQ_MODEL, max_tokens=256,
             messages=[{"role": "user", "content": "say ok"}])
-        print(f"{TICK} {config.GROQ_MODEL} replied: "
-              f"{reply.choices[0].message.content.strip()!r}")
+        said = (reply.choices[0].message.content or "").strip()
+        if said:
+            print(f"{TICK} {config.GROQ_MODEL} replied: {said!r}")
+        else:
+            # Reasoning models spend the budget thinking first; an empty reply
+            # here means the ceiling was too low, not that the key is bad.
+            print(f"{WARN} {config.GROQ_MODEL} replied with empty content -- "
+                  "reasoning used the whole budget. Raise GEN_MAX_TOKENS.")
     except Exception as exc:
         print(f"{CROSS} call failed: {str(exc)[:200]}")
 

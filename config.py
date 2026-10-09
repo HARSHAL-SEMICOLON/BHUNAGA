@@ -92,7 +92,20 @@ DATA_GOV_API_KEY = _dg if len(_dg) >= 20 else DATA_GOV_DEMO_KEY
 # next retirement is a .env change, not a code change.
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 GEN_TEMPERATURE = 0.2
-GEN_MAX_TOKENS = 1024
+GEN_MAX_TOKENS = int(os.getenv("GEN_MAX_TOKENS", "2048"))
+
+# gpt-oss is a reasoning model: it spends tokens thinking before it writes, and
+# they come out of this same budget. At 1024 a long answer can come back empty
+# -- reasoning consumed the lot -- and Devanagari is the first to suffer, since
+# the same answer in Marathi costs several times the tokens it does in English.
+# That failure reads as "the model is bad at Marathi" and is nothing of the
+# kind. Groq's own advice is to raise the ceiling and lower the effort.
+#
+# 'low' also cuts the invisible reasoning spend against the 200k/day free tier,
+# which is most of why a --council both run exhausts it. Values for gpt-oss are
+# low | medium | high. Set empty to omit the parameter for models that reject
+# it -- chat() also retries without it if the API refuses.
+GROQ_REASONING_EFFORT = os.getenv("GROQ_REASONING_EFFORT", "low").strip()
 
 # How to answer Marathi questions:
 #   "native"          -> the AI writes in Marathi directly
