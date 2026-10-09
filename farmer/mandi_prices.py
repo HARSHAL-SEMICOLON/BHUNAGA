@@ -50,6 +50,10 @@ BASE_URL = "https://api.data.gov.in/resource/{}"
 CACHE_PATH = config.ROOT / "market_cache.json"
 CACHE_FRESH_HOURS = 18        # older than this and we say so on screen
 TIMEOUT = 20
+# Consecutive network-level failures before abandoning the ladder. The
+# filter-spelling search is worth paying for once; it is not worth paying
+# a 20-second timeout six times over to rediscover that the host is down.
+NETWORK_FAILURES_BEFORE_GIVING_UP = 2
 
 # The filter spellings the API has used, newest first. Whichever returns rows
 # wins and is remembered for the rest of the session.
@@ -189,18 +193,36 @@ def _fetch_live(commodity: str, state: str, district: str, limit: int):
     """Walk the ladder. Returns (rows, debug) with rows empty if nothing worked."""
     global _working_style
     notes = []
+    unreachable = 0
 
     for resource, combo, params, label in _attempts(commodity, state, district,
                                                     limit):
+        # Two different failures look alike in the notes but mean opposite
+        # things. "HTTP 200 with zero rows" is the one this ladder exists for:
+        # the filter spelling was wrong, so try the next. A timeout or a
+        # refused connection means the host is not answering at all, and no
+        # spelling fixes that -- walking the remaining attempts just pays the
+        # timeout again. Six attempts at TIMEOUT=20 is two minutes of a frozen
+        # spinner before the farmer is shown sample prices anyway.
+        if unreachable >= NETWORK_FAILURES_BEFORE_GIVING_UP:
+            notes.append("gave up: data.gov.in is not responding")
+            break
         try:
             response = requests.get(BASE_URL.format(resource), params=params,
                                     timeout=TIMEOUT)
         except requests.exceptions.Timeout:
+            unreachable += 1
             notes.append(f"{label}: timeout")
+            continue
+        except requests.exceptions.ConnectionError:
+            unreachable += 1
+            notes.append(f"{label}: unreachable")
             continue
         except Exception as exc:
             notes.append(f"{label}: {type(exc).__name__}")
             continue
+
+        unreachable = 0      # the host answered; later failures are about data
 
         if response.status_code != 200:
             notes.append(f"{label}: http {response.status_code}")

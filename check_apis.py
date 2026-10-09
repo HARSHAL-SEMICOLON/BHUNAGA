@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import textwrap
 
 import requests
 
@@ -96,7 +97,7 @@ def check_weather(name: str) -> None:
           f"{w.humidity}% humidity, wind {w.wind:.0f} km/h")
     print(f"       {len(w.daily)} day forecast, {w.rain_week:.0f} mm rain expected")
     for level, message in weather.crop_alerts(w)[:3]:
-        print(f"       [{level}] {message[:88]}")
+        print(f"       [{level}] {textwrap.shorten(message, 88, placeholder='...')}")
 
 
 def check_spray(place) -> None:
@@ -130,7 +131,7 @@ def check_soil(place) -> None:
     for label, value in result.values.items():
         print(f"       {label:18} {value}")
     for note in result.notes[:2]:
-        print(f"       - {note[:88]}")
+        print(f"       - {textwrap.shorten(note, 88, placeholder='...')}")
 
 
 def check_prices(commodity: str, state: str, raw: bool) -> None:
