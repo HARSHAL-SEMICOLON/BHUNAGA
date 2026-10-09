@@ -119,6 +119,10 @@ def main():
     ap.add_argument("--mr-strategies", nargs="+", default=["native"],
                     choices=["native", "translate_after"],
                     help="Marathi strategies to A/B compare")
+    ap.add_argument("--limit", type=int, default=0,
+                    help="only the first N questions. A full --council both "
+                         "run is ~600k tokens and will not fit in Groq's free "
+                         "200k/day; --limit 4 --langs mr does fit")
     ap.add_argument("--council", default="config",
                     choices=["config", "on", "off", "both"],
                     help="'both' runs each question twice, once with a single "
@@ -128,6 +132,8 @@ def main():
     preflight()
 
     items = load_questions(Path(args.questions))
+    if args.limit:
+        items = items[:args.limit]
     do_generate = not args.no_generate
 
     # which council settings to run. None means "whatever config says".
