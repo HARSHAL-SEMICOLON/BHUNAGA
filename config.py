@@ -67,10 +67,17 @@ CHUNK_OVERLAP = 120
 TOP_K = 8                                 # how many text pieces we give the AI
 PREFETCH_K = 30                           # how many we pull from each search before mixing
 # Give a small bonus to text in the same language as the question.
-# Relative bump for evidence in the query's language: 0.10 means +10%, not
-# +0.10. Applied as a ratio in searcher.py because RRF scores are ~0.01-0.03
-# and a flat addition at this size is a filter, not a tie-breaker.
-SAME_LANG_BOOST = float(os.getenv("SAME_LANG_BOOST", "0.10"))   # 0 disables it
+# Relative bump for evidence in the query's language: 0.10 would mean +10%,
+# applied as a ratio in searcher.py because RRF scores are ~0.01-0.03 and a
+# flat addition at that size is a filter rather than a tie-breaker.
+#
+# Default is 0, on measurement rather than principle. Across the 12-question
+# set the boost never helped: Hindi keyword recall ran 0.33 additive / 0.55
+# ratio / 0.60 off, Marathi 0.33 / 0.48 / 0.54, and Marathi MRR peaked with it
+# off. BGE-M3's shared space already does the cross-lingual work; weighting
+# toward same-language evidence only narrows what it is allowed to use.
+# Set above 0 to re-enable and reproduce the comparison.
+SAME_LANG_BOOST = float(os.getenv("SAME_LANG_BOOST", "0"))
 
 # the AI that writes the answer (Groq, GPT-OSS 120B)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")

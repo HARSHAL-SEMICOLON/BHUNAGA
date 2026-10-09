@@ -343,8 +343,37 @@ being single-language.
 
 Each chunk is tagged with its detected source language (`source_lang`). BGE-M3
 retrieves across languages regardless — a Marathi question matches an English
-document — and `SAME_LANG_BOOST` in `config.py` nudges same-language evidence up
-at fusion time (set to `0` to disable and measure the difference).
+document — and `SAME_LANG_BOOST` in `config.py` can weight same-language
+evidence up at fusion time.
+
+**It is off by default, because measuring it killed it.** The boost began life
+as a flat `+0.10` added to the fused score. Qdrant returns RRF scores of about
+0.01–0.03, so that addition was several times the entire spread: every chunk in
+the query's language sorted above every chunk that was not, whatever either one
+said. A feature described as a nudge was a hard language filter, and it was
+switching off the cross-lingual retrieval this project exists to demonstrate.
+
+Re-applied as a ratio it behaves as intended, and it still does not pay:
+
+| keyword recall | en | hi | mr | mr MRR | mr same_lang |
+|---|---|---|---|---|---|
+| additive `+0.10` (the bug) | 0.46 | 0.33 | 0.33 | 0.74 | 1.00 |
+| ratio `×1.10` | 0.46 | 0.55 | 0.48 | 0.76 | 0.71 |
+| no boost | 0.46 | **0.60** | **0.54** | **0.81** | 0.64 |
+
+English is flat across all three, which is the control: 83% of the corpus is
+English, so the boost is close to a no-op there, and a harness that moved
+English would be measuring something other than what it claims.
+
+Two things worth taking from this. BGE-M3's shared vector space needed no help —
+the hand-built heuristic on top of it only subtracted. And `same_lang` is a
+diagnostic, not a target: it moves *against* quality, falling 1.00 → 0.71 → 0.64
+for Marathi while recall climbs. A high `same_lang` means the retriever was
+confined, not that it was confident.
+
+Reproduce with `SAME_LANG_BOOST=0.10 python evaluate.py --no-generate`. Caveat
+worth stating out loud: n=12 questions. The additive-versus-anything gap is far
+too large to be noise; ratio versus off is suggestive, not settled.
 
 ## Evaluation
 
@@ -373,7 +402,7 @@ Metrics (`farmer/scoring.py`, no extra libraries):
 | `hit@k` | a relevant keyword appears anywhere in the top-k chunks |
 | `keyword_recall` | fraction of expected keywords found in top-k |
 | `MRR` | 1 / rank of the first relevant chunk |
-| `same_lang` | fraction of retrieved chunks in the query's language |
+| `same_lang` | fraction of retrieved chunks in the query's language — a diagnostic, not a score to maximise (see the boost ablation above) |
 | `lang_ok` | answer came back in the requested language (re-detected) |
 | `answer_kw` | did the model actually *use* what retrieval found |
 | `grounded` | **fraction of the numbers in the answer that appear in the sources** |
