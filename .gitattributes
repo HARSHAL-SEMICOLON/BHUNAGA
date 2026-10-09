@@ -1,0 +1,18 @@
+# One repository, two gits -- Windows and Linux -- with different core.autocrlf
+# settings. That is why six result files showed as fully modified with nobody
+# having touched them: one side normalises CRLF to LF on commit, the other does
+# not, so each machine rewrites the other's whole file. Normalise text to LF in
+# the repository and let each working tree keep whatever it likes.
+* text=auto eol=lf
+
+# Keep text conversion away from these entirely. models/local_kb/dense.npy is
+# the shipped embedding matrix, and a line-ending rewrite inside a float32
+# array would corrupt the index silently -- no error, just wrong vectors, on
+# the deployed Space rather than here. (Verified intact before adding this:
+# the committed blob still loads as (114, 1024) float32, all finite.)
+*.npy binary
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.png binary
+*.jpg binary
