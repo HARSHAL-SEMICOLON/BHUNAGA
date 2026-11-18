@@ -138,10 +138,13 @@ def check_prices(commodity: str, state: str, raw: bool) -> None:
     head(f"data.gov.in — mandi prices for {commodity}")
     from farmer import mandi_prices
 
+    # config no longer carries a built-in demo key: the one that used to sit
+    # here was committed to a public repo. A missing or too-short key is
+    # coerced to "" in config, so an empty string is the only "no key" case.
     key = config.DATA_GOV_API_KEY or ""
-    if key == config.DATA_GOV_DEMO_KEY:
-        print(f"{WARN} using the shared demo key — it is heavily rate limited.")
-        print("       Get your own free key at https://data.gov.in/help/how-use-datasets-apis")
+    if not key:
+        print(f"{WARN} no DATA_GOV_API_KEY set — prices will be sample figures.")
+        print("       Free key: https://data.gov.in/help/how-use-datasets-apis")
 
     mandi_prices.reset_negotiation()
     result = mandi_prices.get_prices(commodity, state)
