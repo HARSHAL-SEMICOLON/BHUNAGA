@@ -120,10 +120,25 @@ def score_answer_keywords(answer_text: str, keywords: list[str]) -> float:
 
 
 def aggregate(rows: list[dict]) -> dict:
-    """Mean of numeric columns, grouped by nothing (caller groups first)."""
+    """
+    Mean of numeric columns, grouped by nothing (caller groups first).
+
+    A column is averaged only if every row holds a number in it. Reading the
+    column list off rows[0] alone made the result depend on row order:
+    `consensus` and `experts` are ints for council rows and strings for single
+    ones, so a group that happened to start with a council row would try to
+    add a string and raise TypeError. Order of rows should not decide whether
+    a report renders.
+    """
     if not rows:
         return {}
-    keys = [k for k, v in rows[0].items() if isinstance(v, (int, float))]
+
+    def numeric(v) -> bool:
+        # bool is an int subclass, and averaging flags as numbers is misleading
+        return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+    keys = [k for k, v in rows[0].items()
+            if numeric(v) and all(numeric(r.get(k)) for r in rows)]
     return {k: round(sum(r[k] for r in rows) / len(rows), 3) for k in keys}
 
 

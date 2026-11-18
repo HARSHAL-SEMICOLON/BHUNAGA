@@ -23,6 +23,10 @@ load_dotenv()
 ROOT = Path(__file__).parent
 DATA_DIR = ROOT / "data"                 # source documents (mixed-language ok)
 MODELS_DIR = ROOT / "models"             # folder for saved model files
+# Where the local fallback index lives. Env-readable because the ONNX backend
+# needs its own index -- quantised vectors and fp32 vectors are not
+# interchangeable, and searching one with the other degrades silently.
+LOCAL_KB_DIR = os.getenv("LOCAL_KB_DIR", "")
 DATA_DIR.mkdir(exist_ok=True)
 MODELS_DIR.mkdir(exist_ok=True)
 
@@ -39,7 +43,25 @@ LANGID_MIN_CONFIDENCE = 0.50              # if less sure than this, use the defa
 # EMBED_MODEL_NAME / EMBED_DIM env vars (must match the model's vector size).
 EMBED_MODEL_NAME = os.getenv("EMBED_MODEL_NAME", "BAAI/bge-m3")
 EMBED_DIM = int(os.getenv("EMBED_DIM", "1024"))   # size of the model vector
-EMBED_USE_FP16 = True                     # set False if running CPU-only and unstable
+# fp16 halves memory on a GPU but is unreliable on CPU-only hosts, where some
+# ops fall back or error. Env-readable so a deployment can turn it off without
+# a code change. Default unchanged (True) so local behaviour is the same.
+EMBED_USE_FP16 = os.getenv("EMBED_USE_FP16", "1").lower() not in ("0", "false", "no")
+# Which implementation turns text into vectors.
+#   "flagembedding" -> BGE-M3 through torch. ~3 GB of RAM. The default, and
+#                      what the committed index was built with.
+#   "onnx"          -> the same model exported to ONNX and quantised to int8.
+#                      Under 1 GB, no torch, same dense + sparse outputs.
+# Quantisation perturbs the vectors slightly, so an index built with one must
+# be searched with the same one. ONNX_INDEX_DIR keeps them apart.
+EMBED_BACKEND = os.getenv("EMBED_BACKEND", "flagembedding").strip().lower()
+ONNX_REPO_ID = os.getenv("ONNX_REPO_ID", "")          # your HF model repo
+ONNX_FILENAME = os.getenv("ONNX_FILENAME", "model_int8.onnx")
+ONNX_LOCAL_PATH = os.getenv("ONNX_LOCAL_PATH", "")    # skips the download
+# A free host gives one or two shared cores. onnxruntime defaults to one
+# thread per core, and on a shared box the extra threads contend instead of
+# helping, while each one costs memory we do not have.
+ONNX_THREADS = int(os.getenv("ONNX_THREADS", "2"))
 EMBED_BATCH_SIZE = 12
 EMBED_MAX_LENGTH = 8192                   # BGE-M3 supports long context
 
@@ -81,18 +103,42 @@ SAME_LANG_BOOST = float(os.getenv("SAME_LANG_BOOST", "0"))
 
 # the AI that writes the answer (Groq, GPT-OSS 120B)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-# key for market prices. if the user has none, we use a shared demo key
-# so the Market tab still works. you can add your own key in .env.
-DATA_GOV_DEMO_KEY = "579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b"
+# Key for market prices. This used to hold a literal key, which meant a working
+# credential sat in a public repository -- treat that one as burned and issue a
+# fresh one at data.gov.in. Set DATA_GOV_API_KEY in .env locally and in the
+# host's secrets when deployed. Without it the Market screen still renders and
+# labels its figures as samples, which is the designed behaviour.
 _dg = (os.getenv("DATA_GOV_API_KEY") or "").strip()
-# if the key is missing or too short, use the demo key instead
-DATA_GOV_API_KEY = _dg if len(_dg) >= 20 else DATA_GOV_DEMO_KEY
+DATA_GOV_API_KEY = _dg if len(_dg) >= 20 else ""   # "" not None: callers do len() on it
 # Groq retired llama-3.3-70b-versatile on 2026-08-16 (404 model_not_found).
 # Its documented replacement is openai/gpt-oss-120b. Env-overridable so the
 # next retirement is a .env change, not a code change.
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 GEN_TEMPERATURE = 0.2
 GEN_MAX_TOKENS = int(os.getenv("GEN_MAX_TOKENS", "2048"))
+
+# How many finished answers to keep in memory so an identical question does not
+# pay for the model twice. This matters more than it looks: with the council on,
+# one question is four model calls, and the free tier allows 200,000 tokens a
+# day. A jury asking the same demo question three times used to cost twelve
+# calls. Set GEN_CACHE_SIZE=0 to switch it off.
+GEN_CACHE_SIZE = int(os.getenv("GEN_CACHE_SIZE", "64"))
+
+# Looking at a photograph of a sick plant. A separate model from the one that
+# writes answers, because the writing model has no eyes. Env-overridable for
+# the same reason as GROQ_MODEL: providers retire these without warning.
+GROQ_VISION_MODEL = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.8-27b")
+
+# Groq bills an image at a flat 2048 input tokens and rejects requests over
+# 20 MB. A phone photo is bigger than this model needs, so we shrink it before
+# sending -- cheaper, faster, and it still shows a leaf spot clearly.
+VISION_MAX_PIXELS = int(os.getenv("VISION_MAX_PIXELS", "1024"))
+VISION_MAX_BYTES = 15 * 1024 * 1024
+
+# Below this, we will not name a likely disease at all. A farmer who sprays on
+# a 40%-confident guess has wasted the spray and possibly the crop; the honest
+# output at that point is "photograph it again, closer".
+VISION_MIN_CONFIDENCE = int(os.getenv("VISION_MIN_CONFIDENCE", "55"))
 
 # gpt-oss is a reasoning model: it spends tokens thinking before it writes, and
 # they come out of this same budget. At 1024 a long answer can come back empty
@@ -136,6 +182,16 @@ CHAIRMAN_MAX_TOKENS = 1100
 # Where the agreement score stops being "strong" and starts being a warning.
 CONSENSUS_STRONG = 75          # at or above this, the experts lined up
 CONSENSUS_WEAK = 45            # below this, show the farmer that they split
+
+# Self-consistency: the control arm for the council (farmer/self_consistency.py)
+#
+# The council costs four calls. Comparing it against one call cannot tell you
+# whether the expert roles help or whether four calls simply beat one, so the
+# evaluation has a third arm that spends the same four calls on the same prompt
+# repeated. Keep these two in step with the council's four calls and its member
+# temperature, or the comparison stops being fair.
+SELFCONS_SAMPLES = int(os.getenv("SELFCONS_SAMPLES", "4"))
+SELFCONS_TEMPERATURE = COUNCIL_MEMBER_TEMPERATURE
 
 
 @dataclass

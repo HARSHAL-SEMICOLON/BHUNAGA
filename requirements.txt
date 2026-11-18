@@ -1,6 +1,18 @@
+# Torch arrives as a dependency of FlagEmbedding, and PyPI's default Linux
+# wheel is the CUDA build -- about 2.5 GB, which times out or fills the disk on
+# every free host. This line makes pip prefer the CPU wheel (~200 MB). It must
+# stay at the top: pip reads index options before any requirement.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 # --- Core RAG stack (free / local) ---
 qdrant-client>=1.9.0          # vector store, native dense + sparse
-FlagEmbedding>=1.2.10         # BGE-M3 multilingual dense+sparse embeddings
+# FlagEmbedding>=1.2.10       # BGE-M3 dense+sparse -- LOCAL DEVELOPMENT ONLY
+#   Commented out for deployment. It drags in torch and its whole dependency
+#   tree (~several hundred MB), and with EMBED_BACKEND=onnx not one line of it
+#   is ever imported, so on a free host it is install time and disk spent for
+#   nothing -- and enough of both to fail the build outright.
+#   For local work:  pip install FlagEmbedding>=1.2.10
+#   To go back to the FlagEmbedding path in production, uncomment this line.
 lingua-language-detector>=2.0 # en/hi/mr language ID (pure-Python, no compiler)
 groq>=0.11.0                  # GPT-OSS 120B generation (free tier API)
 
@@ -8,11 +20,26 @@ groq>=0.11.0                  # GPT-OSS 120B generation (free tier API)
 pypdf>=4.2.0                  # PDF text extraction
 python-docx>=1.1.0            # .docx extraction
 
+# --- Crop photo check ---
+# Shrinks a phone photo before sending it. Groq charges a flat 2048 tokens per
+# image whatever its size, so a 6 MB original costs upload time on a rural
+# connection and buys nothing. Optional: without it the original is sent.
+Pillow>=10.0.0
+
 # --- Optional: translate-after-generation path (Marathi quality fallback) ---
 # IndicTrans2 is installed separately; see README. Uncomment if used.
 # transformers>=4.40.0
 # torch>=2.2.0
 # sentencepiece>=0.2.0
+
+# --- Deployment embedder (ONNX int8, no torch) ---
+# BGE-M3 under FlagEmbedding needs ~3 GB of RAM, which no free host provides.
+# The same model exported to ONNX and quantised to int8 needs under 1 GB and
+# returns the same dense + sparse pair. Selected with EMBED_BACKEND=onnx;
+# FlagEmbedding stays the default so local development is unchanged.
+onnxruntime>=1.17.0
+transformers>=4.40.0          # tokenizer only -- does not pull torch
+huggingface-hub>=0.23.0       # fetches the quantised model on first run
 
 # --- Utilities ---
 numpy>=1.24                   # the local fallback vector store
@@ -26,7 +53,12 @@ pydantic>=2.7.0
 # uvicorn>=0.29.0
 
 # --- Web UI ---
-# 1.40 is the floor, not 1.36: st.audio_input (the microphone) was added in
-# 1.40, and on an older version the voice button silently does not exist.
-streamlit>=1.40.0
+# The floor has to match what the screens actually call, not the oldest version
+# that imports. Three separate features push it up:
+#   st.audio_input      the microphone                    (1.40)
+#   st.container(key=)  how every custom CSS class is attached  (1.48)
+#   width="stretch"     replaced use_container_width      (1.50)
+# Pinned at 1.50 because on anything older the app does not degrade, it raises
+# TypeError on the first button it draws. Developed and tested against 1.58.
+streamlit>=1.50.0
 requests>=2.31.0

@@ -12,11 +12,14 @@ mean four taps to learn one morning's worth of information.
 
 from __future__ import annotations
 
+import csv
+import io
+
 import streamlit as st
 
 import config
-from farmer import (cost_calculator, daily_advice, geo, mandi_prices, soil,
-                    spray, weather)
+from farmer import (cost_calculator, daily_advice, geo, mandi_prices, msp,
+                    soil, spray, weather)
 from farmer.text import t
 from ui import speak
 
@@ -45,9 +48,18 @@ def _soil(lat, lon, name):
 
 
 def _show_weather(w, lang: str) -> None:
+    """
+    Current conditions as four metric cards, then the week.
+
+    Every number here comes from Open-Meteo. When the call fails there is no
+    placeholder and no last-known guess -- the screen says it could not get
+    the weather and stops, because a farmer who sprays against an invented
+    wind reading loses the spray and the day.
+    """
     if w.error:
         st.info(f"🌦️ {w.error}")
         return
+
     st.markdown(f"##### {w.emoji} {w.place} — {w.desc}")
     columns = st.columns(4)
     columns[0].metric(t("today.temp", lang), f"{w.temp:.0f}°C")
@@ -73,7 +85,7 @@ def _show_spray(place, lang: str) -> None:
     if not place.ok:
         st.info(place.error)
         return
-    if not st.button(t("spray.check", lang), use_container_width=True,
+    if not st.button(t("spray.check", lang), width="stretch",
                      key="spray_btn"):
         return
 
@@ -111,7 +123,7 @@ def _show_soil(place, lang: str) -> None:
     if not place.ok:
         st.info(place.error)
         return
-    if not st.button(t("soil.check", lang), use_container_width=True,
+    if not st.button(t("soil.check", lang), width="stretch",
                      key="soil_btn"):
         return
 
@@ -132,7 +144,9 @@ def _show_soil(place, lang: str) -> None:
 
 
 def today(profile, lang: str = "en") -> None:
-    st.markdown(f"### 🌅 {t('today.head', lang)}")
+    # No heading here. theme.header() already put the screen's name and its
+    # one-line caption at the top of the page; repeating them was the first
+    # thing visible on three of the five screens.
     place_name = st.text_input(t("today.place", lang),
                                profile.village or profile.district or "Pune")
 
@@ -140,7 +154,7 @@ def today(profile, lang: str = "en") -> None:
         _show_weather(_weather(place_name, lang), lang)
 
     if st.button(t("today.generate", lang), type="primary",
-                 use_container_width=True):
+                 width="stretch"):
         if not config.GROQ_API_KEY:
             st.error(t("common.nokey", lang))
         else:
@@ -151,8 +165,7 @@ def today(profile, lang: str = "en") -> None:
             speak.button(brief["text"], lang, key="today")
             for _level, message in brief["alerts"]:
                 st.markdown(f"- {message}")
-    else:
-        st.caption(t("today.hint", lang))
+    # (the hint that used to sit here is the page caption now)
 
     if place_name:
         place = _place(place_name, lang)
@@ -163,7 +176,6 @@ def today(profile, lang: str = "en") -> None:
 
 
 def money(profile, lang: str = "en") -> None:
-    st.markdown(f"### 💰 {t('money.head', lang)}")
     crop = st.selectbox(t("money.crop", lang),
                         list(cost_calculator.CROP_DEFAULTS.keys()))
     defaults = cost_calculator.CROP_DEFAULTS[crop]
@@ -172,9 +184,10 @@ def money(profile, lang: str = "en") -> None:
 
     columns, costs = st.columns(3), {}
     for i, key in enumerate(cost_calculator.COST_KEYS):
+        # "2500.00" is not how anyone writes a number of rupees
         costs[key] = columns[i % 3].number_input(
-            key.capitalize(), 0.0, 1e7, float(defaults[key]), step=500.0,
-            key=f"cost_{key}")
+            f"₹ {key.capitalize()}", 0.0, 1e7, float(defaults[key]),
+            step=500.0, format="%d", key=f"cost_{key}")
 
     left, right = st.columns(2)
     yield_per_acre = left.number_input(
@@ -182,10 +195,10 @@ def money(profile, lang: str = "en") -> None:
         float(defaults["yield"]), step=1.0)
     price = right.number_input(
         f"{t('money.price', lang)} (₹/{defaults['yield_unit']})", 0.0, 1e7,
-        float(defaults["price"]), step=50.0)
+        float(defaults["price"]), step=50.0, format="%d")
 
     if st.button(t("money.calculate", lang), type="primary",
-                 use_container_width=True):
+                 width="stretch"):
         result = cost_calculator.compute(costs, yield_per_acre, price, acres,
                                          defaults["yield_unit"])
         metrics = st.columns(3)
@@ -197,22 +210,112 @@ def money(profile, lang: str = "en") -> None:
             t("money.profit", lang), f"₹{result.profit:,.0f}",
             delta=f"{'📈' if won else '📉'} "
                   f"{t('money.gain' if won else 'money.loss', lang)}")
-        st.bar_chart(result.breakdown)
+        # A bare bar_chart gave five unlabelled bars with no units. The
+        # amounts are rupees for the whole holding, not per acre, and the
+        # chart has to say so or it is read wrong.
+        st.markdown(f"**{t('money.total', lang)} — {acres:g} "
+                    f"{t('home.acres', lang)}**")
+        # Break-even against the floor price answers the question the
+        # calculator alone cannot: not "will I profit at my guessed price"
+        # but "will I profit at the worst price the government allows".
+        support = msp.for_crop(crop)
+        # cost_per_unit is total cost divided by total yield -- the price at
+        # which this crop breaks even. MSP and FRP are both per quintal, so
+        # the comparison is only valid if this crop's yield is too. Every
+        # crop in the table is today; the guard is for the one added later
+        # in tonnes, where the error would be a silent factor of ten.
+        comparable = result.yield_unit == "quintal" and result.cost_per_unit > 0
+        if support and comparable:
+            floor = support[0]
+            covered = result.cost_per_unit <= floor.price
+            line = t("msp.breakeven_under" if covered else "msp.breakeven_over",
+                     lang)
+            body = (f"{floor.label} {floor.mechanism} ₹{floor.price:,} "
+                    f"{t('msp.per', lang)} · "
+                    f"₹{result.cost_per_unit:,.0f} — {line}")
+            (st.success if covered else st.warning)(body)
+        elif msp.has_no_floor(crop):
+            st.info(t("msp.nofloor", lang))
+
+        st.bar_chart(
+            result.breakdown, horizontal=True,
+            x_label="₹", y_label="",
+            color="#2f8f5b")
 
 
 COMMON_CROPS = ["Onion", "Tomato", "Potato", "Cotton", "Soybean", "Wheat",
                 "Grapes", "Sugarcane", "Tur", "Gram"]
 
 
-def market(profile, lang: str = "en") -> None:
-    st.markdown(f"### 📈 {t('market.head', lang)}")
-    left, middle, right = st.columns(3)
-    commodity = left.selectbox(t("market.commodity", lang), COMMON_CROPS)
-    state = middle.text_input(t("market.state", lang), "Maharashtra")
-    district = right.text_input(t("market.district", lang), profile.district)
+def _support_price(commodity: str, lang: str) -> list:
+    """
+    हमीभाव — the government floor, above the live prices.
 
-    if st.button(t("market.get", lang), type="primary",
-                 use_container_width=True):
+    Drawn before any network call and independent of it. The live feed is
+    down more often than it is up, and the floor price is the half of this
+    screen that always works.
+    """
+    rows = msp.for_crop(commodity)
+
+    if not rows:
+        if msp.has_no_floor(commodity):
+            # not a gap in our data -- a fact the farmer needs
+            st.warning(f"**{commodity}** — {t('msp.nofloor', lang)}")
+        return []
+
+    head = t("msp.frp_head" if rows[0].mechanism == "FRP" else "msp.head", lang)
+    st.markdown(f"##### 🛡️ {head}")
+
+    for column, row in zip(st.columns(len(rows)), rows):
+        column.metric(row.label, f"₹{row.price:,}",
+                      help=f"{t('msp.season', lang)}: {row.season} · {row.source}")
+    st.caption(f"{t('msp.per', lang)} · {rows[0].season} · {rows[0].source}")
+    if rows[0].mechanism == "FRP":
+        st.caption(t("msp.frp_note", lang))
+    return rows
+
+
+def _against_support(rows: list, market_rows: list, lang: str) -> None:
+    """
+    Where today's modal price sits against the floor.
+
+    This is the decision the farmer is actually making in the mandi, and it
+    is the one number neither the trader's board nor the price feed shows.
+    """
+    if not rows or not market_rows:
+        return
+    modal = [r.get("modal") or r.get("Modal") or r.get("modal_price")
+             for r in market_rows]
+    modal = [float(m) for m in modal if isinstance(m, (int, float, str))
+             and str(m).replace(".", "", 1).isdigit()]
+    if not modal:
+        return
+
+    best = max(modal)
+    verdict = msp.compare(best, rows[0])
+    gap = abs(verdict.gap)
+    if verdict.below:
+        st.error(f"**{t('msp.below', lang)}** — ₹{gap:,.0f} {t('msp.per', lang)} "
+                 f"({verdict.percent:+.0f}%). {t('msp.below_act', lang)}")
+    else:
+        st.success(f"**{t('msp.above', lang)}** — ₹{gap:,.0f} "
+                   f"{t('msp.per', lang)} ({verdict.percent:+.0f}%)")
+
+
+def market(profile, lang: str = "en") -> None:
+    # one row: three inputs and the action that uses them, bottom-aligned so
+    # the button sits on the same baseline as the fields rather than under them
+    crop_c, state_c, dist_c, go_c = st.columns([2, 2, 2, 1.4],
+                                               vertical_alignment="bottom")
+    commodity = crop_c.selectbox(t("market.commodity", lang), COMMON_CROPS)
+    state = state_c.text_input(t("market.state", lang), "Maharashtra")
+    district = dist_c.text_input(t("market.district", lang), profile.district)
+    fetch = go_c.button(t("market.get", lang), type="primary",
+                        width="stretch")
+
+    support = _support_price(commodity, lang)
+
+    if fetch:
         with st.spinner(t("market.working", lang)):
             result = mandi_prices.get_prices(commodity, state, district)
 
@@ -231,9 +334,32 @@ def market(profile, lang: str = "en") -> None:
             st.caption(f"{len(result.rows)} records · {t('market.unit', lang)}")
             if result.note:
                 st.info(result.note)
-            st.dataframe(result.rows, use_container_width=True, hide_index=True)
+            if result.rows:
+                # only compare against figures that are actually live; a
+                # sample price measured against MSP is a meaningless verdict
+                if result.source == "live":
+                    _against_support(support, result.rows, lang)
+                st.dataframe(result.rows, width="stretch", hide_index=True)
+                # a price is worth more saved than looked at once
+                buffer = io.StringIO()
+                writer = csv.DictWriter(buffer, fieldnames=list(result.rows[0]))
+                writer.writeheader()
+                writer.writerows(result.rows)
+                st.download_button(
+                    f"⬇️ {commodity} prices (CSV)", buffer.getvalue(),
+                    file_name=f"{commodity.lower()}_{state.lower()}_prices.csv",
+                    mime="text/csv", width="stretch")
+            else:
+                # nothing came back and nothing was invented to fill the gap
+                st.markdown(
+                    '<div class="panel empty">No rows for that crop, state '
+                    'and district. Try a wider search — clear the district, '
+                    'or pick a crop that trades in this market.</div>',
+                    unsafe_allow_html=True)
 
-    st.caption("Live data from data.gov.in (Agmarknet).")
+    # Not a promise -- the badge above the table is the truth, and this
+    # line used to claim "live" even when the figures were samples.
+    st.caption("Source: AGMARKNET via data.gov.in. The badge above the table says whether these are today's live rates, a cached copy, or sample figures. Read it before acting on a price.")
     with st.expander("🔧 Why am I not seeing live prices?"):
         st.markdown(
             "Run `python check_apis.py --raw` in the project folder. It prints "

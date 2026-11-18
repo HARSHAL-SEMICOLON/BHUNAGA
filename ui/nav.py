@@ -1,14 +1,19 @@
 """
 Moving between screens.
 
-The old version used st.tabs plus a list of #anchor links in the sidebar. The
-links did nothing at all -- Streamlit renders the page inside its own container
-and a bare #hash never scrolls anywhere -- and the tab strip was small text,
-which is exactly what a farmer who cannot read cannot use.
+The navigation lives in the sidebar, as one vertical list with the current
+screen highlighted. Earlier versions put five buttons in a row across the top
+of the content; that worked, but it pushed the actual page down on a laptop and
+gave no room to ever add a sixth.
 
-So: one place that remembers which screen we are on, and five big buttons that
-set it. Every button is an icon first and a word second, and the word comes from
-farmer/text.py in the farmer's own language.
+Two things are deliberate:
+
+  Icons come from Streamlit's Material set (`:material/...`), not emoji. Emoji
+  render differently on every device and at every size, which is fine for a
+  picture tile a farmer taps and wrong for the chrome around it.
+
+  The word still comes from farmer/text.py. A navigation list that says "Home"
+  and "Market" to a Marathi speaker is the same failure as an English answer.
 """
 
 from __future__ import annotations
@@ -23,21 +28,30 @@ from farmer.text import t
 @dataclass(frozen=True)
 class Screen:
     key: str
-    icon: str
-
-    def label(self, lang: str) -> str:
-        return f"{self.icon}  {t('nav.' + self.key, lang)}"
+    icon: str          # a Material symbol, for the sidebar
+    tile: str          # an emoji, for the big picture tiles a farmer taps
 
 
 SCREENS: tuple[Screen, ...] = (
-    Screen("home", "🏠"),
-    Screen("ask", "💬"),
-    Screen("today", "🌅"),
-    Screen("money", "💰"),
-    Screen("market", "📈"),
+    Screen("home", ":material/home:", "🏠"),
+    Screen("ask", ":material/forum:", "💬"),
+    Screen("diagnose", ":material/photo_camera:", "📷"),
+    Screen("today", ":material/wb_sunny:", "🌅"),
+    Screen("money", ":material/payments:", "💰"),
+    Screen("market", ":material/trending_up:", "📈"),
 )
 
 DEFAULT = "home"
+
+# page title and one line of context, per screen
+TITLES = {
+    "home": ("home.greet", ""),
+    "ask": ("ask.head", "home.tagline"),
+    "diagnose": ("diag.head", ""),
+    "today": ("today.head", "today.hint"),
+    "money": ("money.head", ""),
+    "market": ("market.head", ""),
+}
 
 
 def current() -> str:
@@ -49,33 +63,38 @@ def go(key: str) -> None:
     Send the farmer to another screen.
 
     st.rerun() matters here. Streamlit has already drawn the old screen by the
-    time a button is clicked, so without a rerun the change would not show until
-    the farmer touched something else -- which reads as a broken button.
+    time a button is clicked, so without a rerun the change would not show
+    until the farmer touched something else -- which reads as a broken button.
     """
     st.session_state["screen"] = key
     st.rerun()
 
 
-def bar(lang: str = "en") -> None:
-    """The five main buttons. The one you are on is filled in."""
-    st.markdown('<div class="mainnav">', unsafe_allow_html=True)
+def sidebar_nav(lang: str = "en") -> None:
+    """The main navigation. Drawn inside `with st.sidebar`."""
     here = current()
-    for column, screen in zip(st.columns(len(SCREENS)), SCREENS):
-        with column:
+    with st.container(key="sidenav"):
+        for screen in SCREENS:
             clicked = st.button(
-                screen.label(lang),
+                t("nav." + screen.key, lang),
+                icon=screen.icon,
                 key=f"nav_{screen.key}",
-                use_container_width=True,
-                # filled = you are here. not colour alone: the filled button is
-                # also the only one whose text is light on dark.
+                width="stretch",
+                # filled = you are here. not colour alone: the active item is
+                # also the only one with a border.
                 type="primary" if screen.key == here else "secondary",
             )
             if clicked and screen.key != here:
                 go(screen.key)
-    st.markdown("</div>", unsafe_allow_html=True)
+
+
+def title(lang: str) -> tuple[str, str]:
+    """The heading and caption for whichever screen we are on."""
+    head_key, cap_key = TITLES.get(current(), ("nav.home", ""))
+    return t(head_key, lang), (t(cap_key, lang) if cap_key else "")
 
 
 def back_button(lang: str = "en") -> None:
-    """A way home from every screen, in the same place every time."""
+    """Kept for callers that still want an explicit way home."""
     if st.button(f"⬅️  {t('nav.back', lang)}", key=f"back_{current()}"):
         go("home")

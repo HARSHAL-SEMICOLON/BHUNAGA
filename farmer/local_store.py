@@ -66,7 +66,9 @@ class LocalStore:
     """Stand-in for QdrantClient, backed by two files."""
 
     def __init__(self, folder: Path | None = None):
-        self.folder = Path(folder or (config.MODELS_DIR / "local_kb"))
+        default = (Path(config.LOCAL_KB_DIR) if config.LOCAL_KB_DIR
+                   else config.MODELS_DIR / "local_kb")
+        self.folder = Path(folder or default)
         self.dense: np.ndarray | None = None    # (n_chunks, embed_dim)
         self.meta: list[dict] = []              # one entry per row above
         self._made = False                      # has the collection been created

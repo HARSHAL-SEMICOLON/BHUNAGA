@@ -4,9 +4,9 @@ Everything the farmer actually sees.
 Split out of app.py, which had grown to the point where the styling, the screens
 and the wiring were all tangled together in one file.
 
-    theme.py         the stylesheet and the bar across the top
-    nav.py           which screen we are on, and the buttons that change it
-    sidebar.py       profile, knowledge base, settings
+    theme.py         design tokens, the stylesheet, and the page header
+    nav.py           which screen we are on, and the sidebar navigation
+    sidebar.py       navigation, language, profile, knowledge base, settings
     home.py          the picture-first landing screen
     ask.py           the question screen — speak, tap, or type
     council_view.py  the council's deliberation panel

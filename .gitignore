@@ -11,6 +11,11 @@ venv/
 farmer_profile.json
 profile.json
 
+# Streamlit's own secrets file. .streamlit/secrets.toml.example tells you to
+# copy it to .streamlit/secrets.toml and fill in real keys -- so the real one
+# has to be ignored, or following the instructions commits a live Groq key.
+.streamlit/secrets.toml
+
 # Caches that rebuild themselves. Committing them means shipping stale prices
 # and somebody else's village.
 market_cache.json
@@ -22,7 +27,15 @@ places_cache.json
 # wakes up empty and answers nothing. It is a couple of MB. Ship it.
 # Rebuild with: python ingest.py --recreate
 !models/local_kb/
+# The index that matches the int8 ONNX embedder. Same reasoning as above:
+# small, and the deployed app has no build step to recreate it.
+!models/local_kb_onnx/
 models/*.bin
+# The ONNX export (2.2 GB) and its int8 quantisation (0.6 GB). Both are
+# far past GitHub's 100 MB per-file limit. The quantised one lives in a
+# Hugging Face model repo and is fetched on first run; the fp32 export is
+# only an intermediate. Rebuild either with scripts/build_onnx_embedder.py.
+models/onnx/
 qdrant_storage/
 
 # Source documents: the curated .md knowledge base is tracked, anything else a

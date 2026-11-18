@@ -2,9 +2,13 @@
 """
 Bhunaga (भुनागा) — Farmer's Best Friend.
 
-This file only wires things together: set up the page, draw the sidebar, work
-out which screen we are on, and hand over to it. The screens themselves live in
+This file only wires things together: set up the page, draw the shell, work out
+which screen we are on, and hand over to it. The screens themselves live in
 ui/, and everything they call lives in farmer/.
+
+The shell is the same on every screen — sidebar with navigation, a header with
+the page title and what is currently working — so moving between screens never
+rearranges the furniture.
 
 Run it with:
     streamlit run app.py
@@ -16,13 +20,14 @@ import streamlit as st
 
 from farmer import farmer_profile as profile_mod
 from farmer import text as strings
-from ui import ask, home, nav, sidebar, theme, tools
+from ui import ask, diagnose, home, nav, sidebar, theme, tools
 
-st.set_page_config(page_title="Bhunaga - भुनागा", page_icon="🪱", layout="wide")
+st.set_page_config(page_title="Bhunaga — भुनागा", page_icon="🪱",
+                   layout="wide", initial_sidebar_state="expanded")
 theme.apply()
 
 
-def _state():
+def _state() -> None:
     """Everything that has to survive a rerun, created once."""
     if "history" not in st.session_state:
         st.session_state["history"] = []
@@ -35,9 +40,9 @@ def _state():
 def main() -> None:
     _state()
 
-    # "auto" is a fine setting for answering — we work the language out from the
-    # question — but the interface has to be written in some actual language, so
-    # the labels fall back to English.
+    # "auto" is a fine setting for answering — we work the language out from
+    # the question — but the interface has to be written in some actual
+    # language, so the labels fall back to English.
     profile = st.session_state["profile"]
     auto = profile.language not in strings.LANGS
     ui_lang = strings.resolve(profile.language)
@@ -45,18 +50,24 @@ def main() -> None:
     profile, kb_count = sidebar.render(profile, ui_lang)
     st.session_state["profile"] = profile
 
-    nav.bar(ui_lang)
     screen = nav.current()
+    title, caption = nav.title(ui_lang)
+    # greet the farmer by name on the landing screen, if we know it
+    if screen == "home" and profile.name:
+        title = f"{title}, {profile.name}"
+
+    # One language control, in the sidebar, and one header that says only
+    # where you are. An earlier version repeated the switch up here and hung
+    # the service badges beside it; together they read as a second, broken
+    # copy of the sidebar.
+    theme.header(title, caption)
 
     if screen == "home":
-        home.render(ui_lang)
-        return
-
-    # every screen except home gets a way back, in the same place each time
-    nav.back_button(ui_lang)
-
-    if screen == "ask":
+        home.render(ui_lang, profile)
+    elif screen == "ask":
         ask.render(ui_lang, kb_count, detect=auto)
+    elif screen == "diagnose":
+        diagnose.render(ui_lang, kb_count)
     elif screen == "today":
         tools.today(profile, ui_lang)
     elif screen == "money":

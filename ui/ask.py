@@ -19,11 +19,14 @@ the way back. Trying to set it directly throws StreamlitAPIException.
 
 from __future__ import annotations
 
+import html
+
 import streamlit as st
 
 import config
-from farmer import (answer_writer, intent as intents, language_detector,
-                    question_bank, searcher, voice)
+from farmer import (answer_writer, conversation, intent as intents,
+                    language_detector, question_bank, searcher, text_embedder,
+                    voice)
 from farmer.text import t
 from ui import council_view, nav, speak
 
@@ -63,11 +66,11 @@ def _suggestions(typed: str, lang: str) -> None:
         return
     for i, q in enumerate(matches):
         if st.button(f"{q.icon}  {q.text(lang)}", key=f"sugg_{i}",
-                     use_container_width=True):
+                     width="stretch"):
             _queue(q.text(lang))
 
 
-def _topic_cards(lang: str) -> None:
+def _topic_cards(lang: str, heading: bool = True) -> None:
     """
     Every question in the bank, grouped by topic, as tappable cards.
 
@@ -75,20 +78,20 @@ def _topic_cards(lang: str) -> None:
     question keeps its own icon, so the whole screen can be navigated by
     recognising pictures.
     """
-    st.markdown(f"##### {t('ask.browse', lang)}")
+    if heading:
+        st.markdown(f"##### {t('ask.browse', lang)}")
     topic_names = [f"{t.icon} {t.label(lang)}" for t in question_bank.TOPICS]
     for tab, topic in zip(st.tabs(topic_names), question_bank.TOPICS):
         with tab:
             columns = st.columns(2)
             for i, q in enumerate(topic.questions):
                 with columns[i % 2]:
-                    st.markdown(
-                        f'<div class="qcard"><span class="ic">{q.icon}</span> '
-                        f'<span class="tx">{q.text(lang)}</span></div>',
-                        unsafe_allow_html=True)
-                    if st.button("👆", key=f"q_{topic.key}_{i}",
-                                 use_container_width=True):
-                        _queue(q.text(lang))
+                    # one control per question, same reasoning as the home tiles
+                    with st.container(key=f"qb_{topic.key}_{i}"):
+                        if st.button(f"{q.icon}  {q.text(lang)}",
+                                     key=f"q_{topic.key}_{i}",
+                                     width="stretch"):
+                            _queue(q.text(lang))
 
 
 def _answer(question: str, lang: str, detect: bool) -> None:
@@ -108,9 +111,26 @@ def _answer(question: str, lang: str, detect: bool) -> None:
     intent = intents.classify(question)
     redirect = intents.redirect_note(intent, lang) if not intent.needs_documents else ""
 
-    spinner = t("ask.panel" if config.COUNCIL_ENABLED else "ask.thinking", lang)
+    # "डोस किती?" means nothing on its own. If this question only makes sense
+    # as a follow-up, search with the earlier subject attached and let the
+    # council see what was already said. Standalone questions are untouched.
+    history = conversation.from_ui_history(st.session_state.get("history"))
+    search_for, conversation_context = question, ""
+    if intent.needs_documents:
+        search_for = history.expand(question)
+        conversation_context = history.context_block(question)
+
+    # The first question after the app wakes up pays for a 2.5 GB model
+    # download before it retrieves anything. Say so, rather than showing
+    # "Finding the answer..." for two minutes and looking crashed.
+    if not text_embedder.is_loaded():
+        spinner = t("common.firstload", lang)
+    else:
+        spinner = t("ask.panel" if config.COUNCIL_ENABLED else "ask.thinking",
+                    lang)
+
     with st.spinner(spinner):
-        chunks = searcher.retrieve(question, query_lang=lang)
+        chunks = searcher.retrieve(search_for, query_lang=lang)
         if not chunks:
             st.session_state["history"].append(
                 {"q": question, "lang": lang, "council": None, "sources": [],
@@ -120,7 +140,11 @@ def _answer(question: str, lang: str, detect: bool) -> None:
 
         profile = st.session_state.get("profile")
         context = profile.summary() if profile and profile.summary() else ""
-        asked = question + (f"\n\n(Farmer context: {context})" if context else "")
+        asked = question
+        if conversation_context:
+            asked = f"{conversation_context}\n\n{question}"
+        if context:
+            asked = f"{asked}\n\n(Farmer context: {context})"
 
         answer = answer_writer.generate(asked, query_lang=lang, chunks=chunks)
         st.session_state["history"].append({
@@ -133,11 +157,26 @@ def _answer(question: str, lang: str, detect: bool) -> None:
 
 
 def _history(lang: str) -> None:
-    for i, item in enumerate(reversed(st.session_state["history"])):
-        st.markdown(f'<div class="asked">🧑‍🌾 {item["q"]}</div>',
+    """
+    The conversation, oldest first.
+
+    Reversed order was wrong: a thread that grows upwards means the answer you
+    just waited for appears above the question you just typed, and following a
+    follow-up means reading bottom to top. Chat reads downwards.
+    """
+    for i, item in enumerate(st.session_state["history"]):
+        # escaped: the question is the farmer's own text, not markup
+        st.markdown(f'<div class="who me">🧑\u200d🌾</div>'
+                    f'<div class="msg me">{html.escape(item["q"])}</div>',
                     unsafe_allow_html=True)
-        st.markdown(f'<div class="card">{item["answer"]}</div>',
-                    unsafe_allow_html=True)
+
+        # The answer is markdown from the model — headings, lists, sometimes a
+        # table. Dropping it into an HTML div renders it as literal asterisks,
+        # so it goes through st.markdown inside a keyed container that the
+        # stylesheet turns into the reply bubble.
+        st.markdown('<div class="who">🪱 Bhunaga</div>', unsafe_allow_html=True)
+        with st.container(key=f"bot{i}"):
+            st.markdown(item["answer"])
 
         # a live-data question answered from documents is a trap; say so, and
         # offer the button that goes where the real answer is
@@ -149,7 +188,14 @@ def _history(lang: str) -> None:
 
         # the other half of the bridge: a farmer who spoke the question can
         # hear the answer instead of being handed a screen of text
-        speak.button(item["answer"], item.get("lang", lang), key=f"ans{i}")
+        listen, copy, _rest = st.columns([1, 1, 3])
+        with listen:
+            speak.button(item["answer"], item.get("lang", lang), key=f"ans{i}")
+        with copy:
+            # st.code carries Streamlit's own copy affordance, so the answer can
+            # be lifted into WhatsApp without selecting a screenful of text
+            with st.popover("📋", width="stretch"):
+                st.code(item["answer"], language=None, wrap_lines=True)
         if item.get("council"):
             council_view.render(item["council"], lang)
         if item["sources"]:
@@ -169,37 +215,44 @@ def render(lang: str, kb_count: int, detect: bool = True) -> None:
     before we get here. `detect` says whether to work the answer language out
     from each question instead of using `lang`.
     """
-    st.markdown(f"### {t('ask.head', lang)}")
-    st.caption("English · हिंदी · मराठी")
-
     if kb_count <= 0:
         st.warning(t("ask.empty", lang))
-
-    left, right = st.columns([1, 1])
-    with left:
-        _voice_row(lang)
 
     # a question queued by the mic or a card lands here on the redraw
     queued = st.session_state.pop("pending_question", "")
     if queued:
         st.session_state["question_box"] = queued
 
-    with right:
+    if st.session_state["history"]:
+        _history(lang)
+        st.divider()
+
+    # the composer sits below the thread, where the next thing you type goes
+    box, send = st.columns([5, 1], vertical_alignment="bottom")
+    with box:
         typed = st.text_input(t("ask.type", lang), key="question_box",
                               placeholder="…")
+    with send:
+        asked = st.button(t("ask.button", lang), type="primary",
+                          width="stretch")
+
+    _voice_row(lang)
 
     if typed.strip():
         _suggestions(typed, lang)
 
-    asked = st.button(t("ask.button", lang), type="primary",
-                      use_container_width=True)
     if asked and typed.strip() and kb_count > 0:
         _answer(typed.strip(), lang, detect)
+        st.rerun()
 
     if st.session_state["history"]:
-        if st.button(t("ask.clear", lang)):
+        if st.button(f"🗑️ {t('ask.clear', lang)}"):
             st.session_state["history"] = []
             st.rerun()
-        _history(lang)
+        # The no-typing path used to disappear the moment a question was
+        # answered, which left someone who cannot type with no second question.
+        st.divider()
+        with st.expander(f"👆 {t('ask.browse', lang)}"):
+            _topic_cards(lang, heading=False)
     else:
         _topic_cards(lang)

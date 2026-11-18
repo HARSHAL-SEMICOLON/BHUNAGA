@@ -88,7 +88,11 @@ def test_every_ui_module_uses_the_translation_layer():
     """
     A screen that never imports t() is a screen that is still in English.
     """
-    skipped = {"__init__.py", "theme.py"}      # theme is pure CSS
+    # theme.py is pure CSS and warli.py is pure drawing: neither contains a
+    # word a farmer reads. warli.py's panel captions are passed in by the
+    # screen that uses it, already translated, which is why it has no t() of
+    # its own. Anything that actually renders text belongs in the check.
+    skipped = {"__init__.py", "theme.py", "warli.py"}
     for path in sorted(UI_DIR.glob("*.py")):
         if path.name in skipped:
             continue

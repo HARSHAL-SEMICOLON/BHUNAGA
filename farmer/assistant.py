@@ -23,7 +23,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import config
-from farmer import answer_writer, intent as intents, language_detector, searcher
+from farmer import (answer_writer, conversation, intent as intents,
+                    language_detector, searcher)
 
 # a spoken answer down a phone line has to be much shorter than one on a screen
 IVR_MAX_CHARS = 600
@@ -45,12 +46,18 @@ class Reply:
         return bool(self.text) and not self.error
 
 
-def ask(question: str, lang: str = "", profile=None) -> Reply:
+def ask(question: str, lang: str = "", profile=None, history=None) -> Reply:
     """
     Answer one question. Never raises — every caller is a channel.
 
     `lang` may be "" or "auto" to detect from the question, which is what the
     phone channels do, since a caller cannot set a preference in advance.
+
+    `history` is an optional farmer.conversation.History. Given one, a question
+    that only makes sense as a follow-up ("डोस किती?") is searched for with the
+    earlier subject attached and answered with the earlier exchange in view.
+    Left out, this behaves exactly as it did before — which is what the phone
+    channels want, since each call starts cold.
     """
     question = (question or "").strip()
     if not question:
@@ -66,8 +73,21 @@ def ask(question: str, lang: str = "", profile=None) -> Reply:
     redirect = ("" if intent.needs_documents
                 else intents.redirect_note(intent, lang))
 
+    # A follow-up is searched for with the earlier subject attached. Live-data
+    # questions are left alone: those are answered from an API or a formula,
+    # not from documents, so widening the search would only cost time.
+    search_for = question
+    conversation_context = ""
+    if history is not None and intent.needs_documents:
+        try:
+            search_for = history.expand(question)
+            conversation_context = history.context_block(question)
+        except Exception:
+            # memory is a convenience; never let it take the answer down
+            search_for, conversation_context = question, ""
+
     try:
-        chunks = searcher.retrieve(question, query_lang=lang)
+        chunks = searcher.retrieve(search_for, query_lang=lang)
     except Exception as exc:
         return Reply("", lang, intent=intent.name,
                      error=f"search unavailable: {str(exc)[:120]}")
@@ -78,10 +98,12 @@ def ask(question: str, lang: str = "", profile=None) -> Reply:
             lang, intent=intent.name, redirect=redirect)
 
     asked = question
+    if conversation_context:
+        asked = f"{conversation_context}\n\n{question}"
     if profile is not None and getattr(profile, "summary", None):
         context = profile.summary()
         if context:
-            asked = f"{question}\n\n(Farmer context: {context})"
+            asked = f"{asked}\n\n(Farmer context: {context})"
 
     try:
         answer = answer_writer.generate(asked, query_lang=lang, chunks=chunks)

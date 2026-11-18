@@ -15,6 +15,10 @@ COPY . .
 
 EXPOSE 8501
 # Secrets come from the environment at run time (see DEPLOY.md), not baked in.
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+# Uses python, not curl: python:3.11-slim ships no curl, so a curl healthcheck
+# can never pass and some platforms restart-loop the container for ever.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=3 \
+  CMD python -c "import urllib.request,sys; \
+sys.exit(0 if urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=4).status==200 else 1)"
 CMD ["streamlit", "run", "app.py", \
      "--server.port=8501", "--server.address=0.0.0.0"]

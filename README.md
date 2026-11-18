@@ -385,15 +385,61 @@ retrieval and generation. The question set (`eval/questions.json`) holds the
 # retrieval-only — no Groq key needed, fast sanity check
 python evaluate.py --no-generate
 
-# THE headline number: one model alone vs the council
-python evaluate.py --council both
+# THE experiment: three arms, resumable across days
+python evaluate.py --modes single selfcons council
+
+# read back what previous runs saved, without spending anything
+python evaluate.py --report
 
 # A/B the two Marathi strategies
 python evaluate.py --mr-strategies native translate_after
-
-# just Marathi, both comparisons at once
-python evaluate.py --langs mr --council both --mr-strategies native translate_after
 ```
+
+### Three arms, and why the third one matters
+
+| arm | calls | what it is |
+|---|---|---|
+| `single` | 1 | one model call |
+| `council` | 4 | three experts and a chairman |
+| `selfcons` | 4 | the same prompt sampled four times, most typical answer kept |
+
+`selfcons` is the control, and without it the experiment proves nothing. The
+council costs four calls; comparing it against one call cannot separate *"the
+expert roles help"* from *"four calls beat one call."* Self-consistency spends
+the same four calls with no roles, no chairman and no structure at all — so the
+council only earns its keep if it beats that too.
+
+Three possible outcomes, all worth reporting:
+
+- **council > selfcons** — the structure is doing real work
+- **council ≈ selfcons** — the gain came from sampling, not from the roles
+- **council < selfcons** — the structure is costing you something
+
+Read the `selfcons vs council` block first. It is the one that answers the
+research question.
+
+### Running it inside the free tier
+
+A full three-arm run is several times Groq's free daily token allowance, so the
+harness is built to be interrupted:
+
+- every finished row is written and flushed immediately
+- a later run reads the log and skips whatever is already done
+- `--budget-tokens` (default 180,000) stops cleanly before the cap rather than
+  being cut off mid-answer
+- hitting the daily limit is recognised and reported, not retried
+
+So the procedure is simply to run the same command again tomorrow:
+
+```bash
+python evaluate.py --modes single selfcons council     # day 1, stops at the cap
+python evaluate.py --modes single selfcons council     # day 2, carries on
+python evaluate.py --report                            # when it finishes
+```
+
+Narrow the scope if you would rather finish in one sitting — `--limit 6` or
+`--langs en` both cut the cost proportionally. `--fresh` throws the saved rows
+away and starts over.
 
 Metrics (`farmer/scoring.py`, no extra libraries):
 
@@ -413,18 +459,30 @@ model invented is exactly the mistake that costs a season. Waffly prose is
 harmless; a wrong dose is not. Devanagari digits are normalised, so ५० and 50
 count as the same number.
 
-`--council both` runs every question twice and prints a direct comparison:
+### Reporting a small sample honestly
+
+Twelve questions in three languages is thirty-six observations per arm. At that
+size a bare "the council scored 0.08 higher" is close to meaningless — it could
+be three questions falling either way. So the comparison is **paired** (the arms
+answer the same questions) and reports more than an average:
 
 ```
-metric                   single   council    change
-answer keyword recall      0.xx      0.xx     +0.xx
-numbers traceable          0.xx      0.xx     +0.xx
-answered in language       0.xx      0.xx     +0.xx
+metric                      single   council    change             95% CI  w/l/t
+numbers traceable             0.38      0.75    +0.375 [+0.125,+0.750]* 3/0/5
+answer keyword recall         0.03      0.05    +0.016 [+0.000,+0.047]  1/0/7
 ```
+
+- **w/l/t** — questions where the second arm won, lost, or tied. Easy to read
+  and hard to misinterpret.
+- **95% CI** — a paired bootstrap interval over the per-question differences
+  (`farmer/stats.py`, 5,000 resamples, seeded so it reproduces).
+- **\*** — the interval misses zero. An unmarked row means the data does not
+  show a difference, and saying so plainly is a stronger result than pretending
+  otherwise.
 
 Without that table, "we added multi-agent consensus" is a claim. With it, it is
-a result — and if the council does *not* help, that is a finding worth reporting
-honestly too.
+a result — and if the council does *not* beat the equal-compute control, that is
+a finding worth reporting honestly too.
 
 All 12 questions in `eval/questions.json` are answerable from a real file in
 `data/`, and every one names its `expected_source`, so `source_match` measures
